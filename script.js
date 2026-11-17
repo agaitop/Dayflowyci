@@ -608,3 +608,524 @@ function init() {
 }
 
 document.addEventListener("DOMContentLoaded", init);
+
+
+/* ============================================================
+   NUTRITION MODULE — добавлено отдельно.
+   Использует общие helpers выше ($, readStorage, writeStorage,
+   showToast, escapeHTML, createId, todayISO, dateISO, pad).
+   Своих имён, конфликтующих с планировщиком, не создаёт.
+   ============================================================ */
+
+const NUTRI_MEALS_KEY = "dayflow_meals_v1";
+const NUTRI_GOALS_KEY = "dayflow_goals_v1";
+const NUTRI_CUSTOM_KEY = "dayflow_custom_foods_v1";
+const NUTRI_DEFAULT_GOALS = { cal: 2200, pro: 140, fat: 70, carb: 250 };
+
+const FOOD_CATS = {
+  meat: "Мясо, рыба, яйца",
+  dairy: "Молочное",
+  grains: "Крупы и гарниры",
+  veg: "Овощи",
+  fruit: "Фрукты и ягоды",
+  other: "Орехи, хлеб и другое"
+};
+
+/* Значения на 100 г: [ккал, белки, жиры, углеводы] */
+const FOOD_DB = [
+  { id: "chicken_breast", name: "Куриная грудка", cat: "meat", cal: 165, pro: 31, fat: 3.6, carb: 0 },
+  { id: "chicken_thigh", name: "Куриное бедро", cat: "meat", cal: 209, pro: 26, fat: 11, carb: 0 },
+  { id: "turkey", name: "Индейка", cat: "meat", cal: 189, pro: 29, fat: 7, carb: 0 },
+  { id: "beef", name: "Говядина", cat: "meat", cal: 250, pro: 26, fat: 15, carb: 0 },
+  { id: "pork", name: "Свинина", cat: "meat", cal: 242, pro: 27, fat: 14, carb: 0 },
+  { id: "salmon", name: "Лосось", cat: "meat", cal: 208, pro: 20, fat: 13, carb: 0 },
+  { id: "tuna", name: "Тунец", cat: "meat", cal: 132, pro: 28, fat: 1, carb: 0 },
+  { id: "cod", name: "Треска", cat: "meat", cal: 82, pro: 18, fat: 0.7, carb: 0 },
+  { id: "shrimp", name: "Креветки", cat: "meat", cal: 99, pro: 24, fat: 0.3, carb: 0.2 },
+  { id: "egg", name: "Яйцо куриное (1 шт ≈ 60 г)", cat: "meat", cal: 155, pro: 13, fat: 11, carb: 1.1 },
+  { id: "egg_white", name: "Яичный белок", cat: "meat", cal: 52, pro: 11, fat: 0.2, carb: 0.7 },
+  { id: "milk", name: "Молоко 2.5%", cat: "dairy", cal: 52, pro: 2.8, fat: 2.5, carb: 4.7 },
+  { id: "kefir", name: "Кефир 1%", cat: "dairy", cal: 40, pro: 3, fat: 1, carb: 4 },
+  { id: "cottage", name: "Творог 5%", cat: "dairy", cal: 121, pro: 17, fat: 5, carb: 1.8 },
+  { id: "cottage0", name: "Творог 0%", cat: "dairy", cal: 71, pro: 16, fat: 0.5, carb: 1.3 },
+  { id: "yogurt", name: "Йогурт натуральный", cat: "dairy", cal: 60, pro: 4, fat: 1.5, carb: 7 },
+  { id: "cheese", name: "Сыр твёрдый", cat: "dairy", cal: 360, pro: 24, fat: 29, carb: 0 },
+  { id: "sour15", name: "Сметана 15%", cat: "dairy", cal: 158, pro: 2.6, fat: 15, carb: 3 },
+  { id: "oats", name: "Овсянка (сухая)", cat: "grains", cal: 366, pro: 12, fat: 6, carb: 62 },
+  { id: "buckwheat", name: "Гречка (сухая)", cat: "grains", cal: 343, pro: 13, fat: 3.4, carb: 72 },
+  { id: "rice", name: "Рис (сухой)", cat: "grains", cal: 344, pro: 6.7, fat: 0.7, carb: 78 },
+  { id: "rice_cooked", name: "Рис отварной", cat: "grains", cal: 116, pro: 2.2, fat: 0.5, carb: 25 },
+  { id: "buckwheat_cooked", name: "Гречка отварная", cat: "grains", cal: 110, pro: 4, fat: 1, carb: 21 },
+  { id: "pasta", name: "Макароны (сухие)", cat: "grains", cal: 350, pro: 12, fat: 1.5, carb: 72 },
+  { id: "pasta_cooked", name: "Макароны отварные", cat: "grains", cal: 158, pro: 5, fat: 1, carb: 31 },
+  { id: "potato", name: "Картофель", cat: "grains", cal: 77, pro: 2, fat: 0.1, carb: 17 },
+  { id: "potato_boiled", name: "Картофель отварной", cat: "grains", cal: 82, pro: 2, fat: 0.4, carb: 17 },
+  { id: "lentils", name: "Чечевица (сухая)", cat: "grains", cal: 352, pro: 24, fat: 1, carb: 60 },
+  { id: "chickpeas", name: "Нут (сухой)", cat: "grains", cal: 364, pro: 19, fat: 6, carb: 61 },
+  { id: "beans", name: "Фасоль (сухая)", cat: "grains", cal: 333, pro: 21, fat: 1.2, carb: 60 },
+  { id: "tomato", name: "Помидор", cat: "veg", cal: 18, pro: 0.9, fat: 0.2, carb: 3.9 },
+  { id: "cucumber", name: "Огурец", cat: "veg", cal: 15, pro: 0.7, fat: 0.1, carb: 3.6 },
+  { id: "cabbage", name: "Капуста", cat: "veg", cal: 25, pro: 1.3, fat: 0.1, carb: 5.8 },
+  { id: "carrot", name: "Морковь", cat: "veg", cal: 41, pro: 0.9, fat: 0.2, carb: 10 },
+  { id: "beet", name: "Свёкла", cat: "veg", cal: 43, pro: 1.6, fat: 0.2, carb: 9 },
+  { id: "onion", name: "Лук", cat: "veg", cal: 40, pro: 1.1, fat: 0.1, carb: 9 },
+  { id: "pepper", name: "Перец болгарский", cat: "veg", cal: 27, pro: 1, fat: 0.3, carb: 6 },
+  { id: "broccoli", name: "Брокколи", cat: "veg", cal: 34, pro: 2.8, fat: 0.4, carb: 7 },
+  { id: "spinach", name: "Шпинат", cat: "veg", cal: 23, pro: 2.9, fat: 0.4, carb: 3.6 },
+  { id: "zucchini", name: "Кабачок", cat: "veg", cal: 17, pro: 1.2, fat: 0.3, carb: 3.1 },
+  { id: "avocado", name: "Авокадо", cat: "veg", cal: 160, pro: 2, fat: 15, carb: 9 },
+  { id: "banana", name: "Банан", cat: "fruit", cal: 89, pro: 1.1, fat: 0.3, carb: 23 },
+  { id: "apple", name: "Яблоко", cat: "fruit", cal: 52, pro: 0.3, fat: 0.2, carb: 14 },
+  { id: "orange", name: "Апельсин", cat: "fruit", cal: 47, pro: 0.9, fat: 0.1, carb: 12 },
+  { id: "grape", name: "Виноград", cat: "fruit", cal: 69, pro: 0.7, fat: 0.2, carb: 18 },
+  { id: "strawberry", name: "Клубника", cat: "fruit", cal: 32, pro: 0.7, fat: 0.3, carb: 8 },
+  { id: "blueberry", name: "Черника", cat: "fruit", cal: 57, pro: 0.7, fat: 0.3, carb: 14 },
+  { id: "pear", name: "Груша", cat: "fruit", cal: 57, pro: 0.4, fat: 0.1, carb: 15 },
+  { id: "kiwi", name: "Киви", cat: "fruit", cal: 61, pro: 1.1, fat: 0.5, carb: 15 },
+  { id: "watermelon", name: "Арбуз", cat: "fruit", cal: 30, pro: 0.6, fat: 0.2, carb: 8 },
+  { id: "walnut", name: "Грецкий орех", cat: "other", cal: 654, pro: 15, fat: 65, carb: 14 },
+  { id: "almond", name: "Миндаль", cat: "other", cal: 579, pro: 21, fat: 50, carb: 22 },
+  { id: "sunflower_seed", name: "Семечки подсолнуха", cat: "other", cal: 584, pro: 21, fat: 51, carb: 20 },
+  { id: "peanut_butter", name: "Арахисовая паста", cat: "other", cal: 588, pro: 25, fat: 50, carb: 20 },
+  { id: "bread_white", name: "Хлеб белый", cat: "other", cal: 265, pro: 9, fat: 3.2, carb: 49 },
+  { id: "bread_rye", name: "Хлеб ржаной", cat: "other", cal: 259, pro: 8.5, fat: 3.3, carb: 48 },
+  { id: "chocolate", name: "Шоколад тёмный", cat: "other", cal: 546, pro: 5, fat: 31, carb: 61 },
+  { id: "honey", name: "Мёд", cat: "other", cal: 304, pro: 0.3, fat: 0, carb: 82 },
+  { id: "sugar", name: "Сахар", cat: "other", cal: 387, pro: 0, fat: 0, carb: 100 },
+  { id: "oil_olive", name: "Масло оливковое", cat: "other", cal: 884, pro: 0, fat: 100, carb: 0 },
+  { id: "oil_sun", name: "Масло подсолнечное", cat: "other", cal: 884, pro: 0, fat: 100, carb: 0 },
+  { id: "butter", name: "Масло сливочное", cat: "other", cal: 717, pro: 0.9, fat: 81, carb: 0.1 }
+];
+
+const MEAL_TYPES = { breakfast: "Завтрак", lunch: "Обед", dinner: "Ужин", snack: "Перекус" };
+
+let nutriMeals = [];
+let nutriGoals = { ...NUTRI_DEFAULT_GOALS };
+let nutriCustom = [];
+let nutriDate = todayISO();
+let nutriDraft = [];
+let nutriPhoto = "";
+
+function nutriNum(value) {
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 0 ? n : 0;
+}
+function nutriRound(value) { return Math.round(value); }
+function nutriOne(value) { return Math.round(value * 10) / 10; }
+
+function nutriLoadJSON(key, fallback) {
+  try {
+    const parsed = JSON.parse(readStorage(key, "null"));
+    return parsed === null ? fallback : parsed;
+  } catch (error) {
+    console.error("DayFlow nutrition: повреждены данные.", error);
+    return fallback;
+  }
+}
+
+function nutriLoadState() {
+  const meals = nutriLoadJSON(NUTRI_MEALS_KEY, []);
+  nutriMeals = Array.isArray(meals) ? meals.filter(m =>
+    m && typeof m.id === "string" && typeof m.date === "string" && Array.isArray(m.items)
+  ) : [];
+
+  const goals = nutriLoadJSON(NUTRI_GOALS_KEY, null);
+  nutriGoals = {
+    cal: nutriNum(goals?.cal) || NUTRI_DEFAULT_GOALS.cal,
+    pro: nutriNum(goals?.pro) || NUTRI_DEFAULT_GOALS.pro,
+    fat: nutriNum(goals?.fat) || NUTRI_DEFAULT_GOALS.fat,
+    carb: nutriNum(goals?.carb) || NUTRI_DEFAULT_GOALS.carb
+  };
+
+  const custom = nutriLoadJSON(NUTRI_CUSTOM_KEY, []);
+  nutriCustom = Array.isArray(custom) ? custom.filter(f =>
+    f && typeof f.id === "string" && typeof f.name === "string"
+  ) : [];
+}
+
+function nutriSaveMeals() { return writeStorage(NUTRI_MEALS_KEY, JSON.stringify(nutriMeals)); }
+function nutriSaveGoals() { return writeStorage(NUTRI_GOALS_KEY, JSON.stringify(nutriGoals)); }
+function nutriSaveCustom() { return writeStorage(NUTRI_CUSTOM_KEY, JSON.stringify(nutriCustom)); }
+
+function nutriAllFoods() { return FOOD_DB.concat(nutriCustom); }
+function nutriFindFood(id) { return nutriAllFoods().find(f => f.id === id); }
+function nutriCatLabel(cat) { return FOOD_CATS[cat] || "Своё"; }
+
+function nutriItemMacros(item) {
+  const factor = (Number(item.grams) || 0) / 100;
+  return {
+    cal: (Number(item.cal) || 0) * factor,
+    pro: (Number(item.pro) || 0) * factor,
+    fat: (Number(item.fat) || 0) * factor,
+    carb: (Number(item.carb) || 0) * factor
+  };
+}
+function nutriSumItems(items) {
+  const total = { cal: 0, pro: 0, fat: 0, carb: 0 };
+  (items || []).forEach(item => {
+    const m = nutriItemMacros(item);
+    total.cal += m.cal; total.pro += m.pro; total.fat += m.fat; total.carb += m.carb;
+  });
+  return total;
+}
+function nutriDayTotals(date) {
+  const total = { cal: 0, pro: 0, fat: 0, carb: 0 };
+  nutriMeals.filter(m => m.date === date).forEach(meal => {
+    const m = nutriSumItems(meal.items);
+    total.cal += m.cal; total.pro += m.pro; total.fat += m.fat; total.carb += m.carb;
+  });
+  return total;
+}
+
+function nutriSetRing(id, value, goal) {
+  const circle = $(id);
+  if (!circle) return;
+  const radius = Number(circle.getAttribute("r")) || 52;
+  const circumference = 2 * Math.PI * radius;
+  const ratio = goal > 0 ? value / goal : 0;
+  const clamped = Math.max(0, Math.min(ratio, 1));
+  circle.style.strokeDasharray = `${circumference}`;
+  circle.style.strokeDashoffset = `${circumference * (1 - clamped)}`;
+  circle.style.stroke = ratio > 1 ? "var(--over-color)" : "";
+}
+
+function nutriRenderDashboard() {
+  const total = nutriDayTotals(nutriDate);
+  const setText = (id, value) => { const el = $(id); if (el) el.textContent = value; };
+
+  setText("calValue", nutriRound(total.cal));
+  setText("calGoal", nutriGoals.cal);
+  const left = nutriGoals.cal - total.cal;
+  setText("calRemaining", left >= 0 ? `Осталось ${nutriRound(left)} ккал` : `Перебор ${nutriRound(-left)} ккал`);
+  nutriSetRing("ringCal", total.cal, nutriGoals.cal);
+
+  setText("proValue", nutriRound(total.pro));
+  setText("fatValue", nutriRound(total.fat));
+  setText("carbValue", nutriRound(total.carb));
+  setText("proGoal", `цель ${nutriGoals.pro} г`);
+  setText("fatGoal", `цель ${nutriGoals.fat} г`);
+  setText("carbGoal", `цель ${nutriGoals.carb} г`);
+  nutriSetRing("ringPro", total.pro, nutriGoals.pro);
+  nutriSetRing("ringFat", total.fat, nutriGoals.fat);
+  nutriSetRing("ringCarb", total.carb, nutriGoals.carb);
+}
+
+function nutriRenderMeals() {
+  const list = $("mealList");
+  const empty = $("mealEmpty");
+  if (!list) return;
+
+  const meals = nutriMeals
+    .filter(m => m.date === nutriDate)
+    .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+
+  list.innerHTML = meals.map(meal => {
+    const total = nutriSumItems(meal.items);
+    const items = meal.items.map(item => {
+      const m = nutriItemMacros(item);
+      return `<li><span>${escapeHTML(item.name)} · ${nutriRound(item.grams)} г</span><span>${nutriRound(m.cal)} ккал</span></li>`;
+    }).join("");
+    const photo = meal.photo
+      ? `<img class="meal-photo" src="${meal.photo}" alt="Фото: ${escapeHTML(MEAL_TYPES[meal.type] || "Приём пищи")}">`
+      : "";
+    return `<article class="meal-card">
+      <div class="meal-head">
+        ${photo}
+        <div class="meal-head-main">
+          <strong>${escapeHTML(MEAL_TYPES[meal.type] || "Приём пищи")}</strong>
+          <span class="meal-kcal">${nutriRound(total.cal)} ккал</span>
+        </div>
+        <button type="button" class="mini-action delete-action" data-meal-delete="${escapeHTML(meal.id)}" aria-label="Удалить приём">
+          <svg class="icon"><use href="#i-trash"></use></svg>
+        </button>
+      </div>
+      <ul class="meal-items">${items}</ul>
+      <div class="meal-macros">
+        <span>Б ${nutriOne(total.pro)}</span>
+        <span>Ж ${nutriOne(total.fat)}</span>
+        <span>У ${nutriOne(total.carb)}</span>
+      </div>
+    </article>`;
+  }).join("");
+
+  if (empty) empty.classList.toggle("hidden", meals.length > 0);
+  list.classList.toggle("hidden", meals.length === 0);
+}
+
+function nutriRender() {
+  nutriRenderDashboard();
+  nutriRenderMeals();
+}
+
+function nutriSetDate(date) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
+  nutriDate = date;
+  const input = $("nutriDate");
+  if (input) input.value = date;
+  nutriRender();
+}
+
+/* --- Модалка приёма пищи --- */
+function nutriFillFoodCats() {
+  const select = $("foodCat");
+  if (!select) return;
+  select.innerHTML = `<option value="all">Все категории</option>` +
+    Object.entries(FOOD_CATS).map(([key, label]) =>
+      `<option value="${key}">${escapeHTML(label)}</option>`).join("");
+}
+
+function nutriRenderFoodResults() {
+  const box = $("foodResults");
+  if (!box) return;
+  const query = ($("foodSearch")?.value || "").trim().toLocaleLowerCase("ru");
+  const cat = $("foodCat")?.value || "all";
+
+  const matches = nutriAllFoods().filter(food => {
+    const okCat = cat === "all" || food.cat === cat;
+    const okQuery = !query ||
+      food.name.toLocaleLowerCase("ru").includes(query) ||
+      nutriCatLabel(food.cat).toLocaleLowerCase("ru").includes(query);
+    return okCat && okQuery;
+  }).slice(0, 50);
+
+  if (!matches.length) {
+    box.innerHTML = `<div class="food-empty">Ничего не найдено. Добавь свой продукт ниже.</div>`;
+    return;
+  }
+  box.innerHTML = matches.map(food =>
+    `<button type="button" class="food-row" data-food-add="${escapeHTML(food.id)}">
+      <span class="food-row-main">
+        <strong>${escapeHTML(food.name)}</strong>
+        <small>${escapeHTML(nutriCatLabel(food.cat))} · ${food.cal} ккал / 100 г</small>
+      </span>
+      <span class="food-row-add"><svg class="icon"><use href="#i-plus"></use></svg></span>
+    </button>`
+  ).join("");
+}
+
+function nutriRenderDraft() {
+  const list = $("draftList");
+  if (!list) return;
+  if (!nutriDraft.length) {
+    list.innerHTML = `<div class="draft-empty">Выбери продукты из списка выше.</div>`;
+  } else {
+    list.innerHTML = nutriDraft.map(item =>
+      `<div class="draft-row" data-draft-row="${escapeHTML(item.id)}">
+        <span class="draft-name">${escapeHTML(item.name)}</span>
+        <span class="draft-grams">
+          <input type="number" min="1" step="1" inputmode="numeric" value="${nutriRound(item.grams)}" data-draft-grams="${escapeHTML(item.id)}" aria-label="Граммы: ${escapeHTML(item.name)}">
+          <span>г</span>
+        </span>
+        <span class="draft-kcal" data-draft-kcal>${nutriRound(nutriItemMacros(item).cal)} ккал</span>
+        <button type="button" class="mini-action delete-action" data-draft-remove="${escapeHTML(item.id)}" aria-label="Убрать продукт">
+          <svg class="icon"><use href="#i-x"></use></svg>
+        </button>
+      </div>`
+    ).join("");
+  }
+  nutriUpdatePreview();
+}
+
+function nutriUpdatePreview() {
+  const preview = $("draftPreview");
+  if (!preview) return;
+  const total = nutriSumItems(nutriDraft);
+  preview.textContent = `${nutriRound(total.cal)} ккал · Б ${nutriOne(total.pro)} · Ж ${nutriOne(total.fat)} · У ${nutriOne(total.carb)}`;
+}
+
+function nutriAddFood(id) {
+  const food = nutriFindFood(id);
+  if (!food) return;
+  nutriDraft.push({
+    id: createId(),
+    foodId: food.id,
+    name: food.name,
+    grams: 100,
+    cal: food.cal, pro: food.pro, fat: food.fat, carb: food.carb
+  });
+  nutriRenderDraft();
+}
+
+function nutriOpenMeal() {
+  const modal = $("mealModal");
+  if goalsRaw = nutriLoadJSON(NUTRI_GOALS_KEY, null);
+  const goals = {
+    cal: nutriNum(goalsRaw?.cal) || NUTRI_DEFAULT_GOALS.cal
+  };
+  const mealsRaw = nutriLoadJSON(NUTRI_MEALS_KEY, []);
+  const meals = Array.isArray(mealsRaw) ? mealsRaw : [];
+  const total = { cal: 0, pro: 0, fat: 0, carb: 0 };
+  meals.filter(m => m && m.date === todayISO() && Array.isArray(m.items)).forEach(meal => {
+    const m = nutriSumItems(meal.items);
+    total.cal += m.cal; total.pro += m.pro; total.fat += m.fat; total.carb += m.carb;
+  });
+  const setText = (id, value) => { const el = $(id); if (el) el.textContent = value; };
+  setText("nsCal", nutriRound(total.cal));
+  setText("nsGoal", goals.cal);
+  setText("nsP", nutriRound(total.pro));
+  setText("nsF", nutriRound(total.fat));
+  setText("nsC", nutriRound(total.carb));
+  nutriSetRing("nsRing", total.cal, goals.cal);
+}
+
+function initNutrition() {
+  nutriRenderSummary();
+
+  if (!$("nutriDate")) return; // не страница питания — дальше не идём
+
+  nutriLoadState();
+  const dateInput = $("nutriDate");
+  dateInput.value = nutriDate;
+  nutriRender();
+
+  dateInput.addEventListener("change", event => {
+    if (event.target.value) nutriSetDate(event.target.value);
+  });
+  $("nutriPrevDay")?.addEventListener("click", () => {
+    const d = new Date(`${nutriDate}T12:00:00`); d.setDate(d.getDate() - 1); nutriSetDate(dateISO(d));
+  });
+  $("nutriNextDay")?.addEventListener("click", () => {
+    const d = new Date(`${nutriDate}T12:00:00`); d.setDate(d.getDate() + 1); nutriSetDate(dateISO(d));
+  });
+
+  $("nutriAddMeal")?.addEventListener("click", nutriOpenMeal);
+  $("mealClose")?.addEventListener("click", nutriCloseMeal);
+  $("mealCancel")?.addEventListener("click", nutriCloseMeal);
+  $("mealModal")?.addEventListener("click", event => {
+    if (event.target === $("mealModal")) nutriCloseMeal();
+  });
+
+  $("foodSearch")?.addEventListener("input", nutriRenderFoodResults);
+  $("foodSearch")?.addEventListener("keydown", event => {
+    if (event.key === "Enter") event.preventDefault();
+  });
+  $("foodCat")?.addEventListener("change", nutriRenderFoodResults);
+
+  $("foodResults")?.addEventListener("click", event => {
+    const button = event.target.closest("[data-food-add]");
+    if (button) nutriAddFood(button.dataset.foodAdd);
+  });
+
+  $("draftList")?.addEventListener("input", event => {
+    const input = event.target.closest("[data-draft-grams]");
+    if (!input) return;
+    const item = nutriDraft.find(d => d.id === input.dataset.draftGrams);
+    if (!item) return;
+    item.grams = Math.max(0, Number(input.value) || 0);
+    const row = input.closest("[data-draft-row]");
+    const kcal = row?.querySelector("[data-draft-kcal]");
+    if (kcal) kcal.textContent = `${nutriRound(nutriItemMacros(item).cal)} ккал`;
+    nutriUpdatePreview();
+  });
+  $("draftList")?.addEventListener("click", event => {
+    const button = event.target.closest("[data-draft-remove]");
+    if (!button) return;
+    nutriDraft = nutriDraft.filter(d => d.id !== button.dataset.draftRemove);
+    nutriRenderDraft();
+  });
+
+  $("customToggle")?.addEventListener("click", () => $("customForm")?.classList.toggle("hidden"));
+  $("cfAdd")?.addEventListener("click", () => {
+    const name = $("cfName").value.trim();
+    const cal = nutriNum($("cfCal").value);
+    const pro = nutriNum($("cfPro").value);
+    const fat = nutriNum($("cfFat").value);
+    const carb = nutriNum($("cfCarb").value);
+    if (name.length < 2) { showToast("Введите название продукта", "error"); return; }
+    if (cal <= 0) { showToast("Укажите калорийность на 100 г", "error"); return; }
+    const food = { id: "custom-" + createId(), name, cat: "custom", cal, pro, fat, carb };
+    nutriCustom.push(food);
+    if (!nutriSaveCustom()) { nutriCustom.pop(); return; }
+    nutriAddFood(food.id);
+    $("cfName").value = ""; $("cfCal").value = ""; $("cfPro").value = ""; $("cfFat").value = ""; $("cfCarb").value = "";
+    $("customForm")?.classList.add("hidden");
+    showToast("Продукт добавлен в базу");
+  });
+
+  $("mealPhoto")?.addEventListener("change", async event => {
+    const file = event.target.files && event.target.files[0];
+    event.target.value = "";
+    if (!file) return;
+    try {
+      nutriPhoto = await nutriCompressPhoto(file);
+      const img = $("photoImg");
+      if (img) img.src = nutriPhoto;
+      $("photoPreview")?.classList.remove("hidden");
+    } catch (error) {
+      console.warn("DayFlow nutrition: фото не обработано.", error);
+      showToast("Не удалось обработать фото", "error");
+    }
+  });
+  $("photoRemove")?.addEventListener("click", () => {
+    nutriPhoto = "";
+    $("photoPreview")?.classList.add("hidden");
+  });
+
+  $("mealForm")?.addEventListener("submit", event => {
+    event.preventDefault();
+    if (!nutriDraft.length) { showToast("Добавьте хотя бы один продукт", "error"); return; }
+    const items = nutriDraft
+      .filter(d => Number(d.grams) > 0)
+      .map(d => ({
+        foodId: d.foodId, name: d.name, grams: Number(d.grams),
+        cal: d.cal, pro: d.pro, fat: d.fat, carb: d.carb
+      }));
+    if (!items.length) { showToast("Укажите граммы больше нуля", "error"); return; }
+
+    const meal = {
+      id: createId(),
+      date: nutriDate,
+      type: $("mealType").value,
+      items,
+      photo: nutriPhoto,
+      createdAt: Date.now()
+    };
+    nutriMeals.push(meal);
+    if (!nutriSaveMeals()) { nutriMeals.pop(); return; }
+    nutriCloseMeal();
+    nutriRender();
+    showToast("Приём пищи добавлен");
+  });
+
+  $("mealList")?.addEventListener("click", event => {
+    const button = event.target.closest("[data-meal-delete]");
+    if (!button) return;
+    const id = button.dataset.mealDelete;
+    if (!window.confirm("Удалить приём пищи?")) return;
+    const previous = nutriMeals;
+    nutriMeals = nutriMeals.filter(m => m.id !== id);
+    if (!nutriSaveMeals()) { nutriMeals = previous; return; }
+    nutriRender();
+    showToast("Приём пищи удалён");
+  });
+
+  $("nutriGoalsBtn")?.addEventListener("click", nutriOpenGoals);
+  $("goalsClose")?.addEventListener("click", nutriCloseGoals);
+  $("goalsCancel")?.addEventListener("click", nutriCloseGoals);
+  $("goalsModal")?.addEventListener("click", event => {
+    if (event.target === $("goalsModal")) nutriCloseGoals();
+  });
+  $("goalsForm")?.addEventListener("submit", event => {
+    event.preventDefault();
+    const cal = nutriNum($("goalCal").value);
+    const pro = nutriNum($("goalPro").value);
+    const fat = nutriNum($("goalFat").value);
+    const carb = nutriNum($("goalCarb").value);
+    if (cal <= 0 || pro <= 0 || fat <= 0 || carb <= 0) {
+      showToast("Все нормы должны быть больше нуля", "error");
+      return;
+    }
+    const previous = { ...nutriGoals };
+    nutriGoals = { cal, pro, fat, carb };
+    if (!nutriSaveGoals()) { nutriGoals = previous; return; }
+    nutriCloseGoals();
+    nutriRender();
+    showToast("Нормы сохранены");
+  });
+
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape") { nutriCloseMeal(); nutriCloseGoals(); }
+  });
+}
+
+document.addEventListener("DOMContentLoaded", initNutrition);
