@@ -29,13 +29,71 @@ let activeStatus = "all";
 let activeCategory = new URLSearchParams(location.search).get("category") || "all";
 let searchQuery = "";
 
+// === СИСТЕМА УВЕДОМЛЕНИЙ ===
+function showToast(message, type = "info") {
+  const container = $("toast-container");
+  if (!container) return;
+  
+  const icons = { success: "✓", error: "×", info: "ℹ" };
+  const toast = document.createElement("div");
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<span>${icons[type] || "ℹ"}</span><span>${message}</span>`;
+  
+  container.appendChild(toast);
+  
+  // Автоматическое удаление через 3.5 секунды
+  setTimeout(() => {
+    toast.style.animation = "toastFadeOut 0.3s forwards";
+    setTimeout(() => toast.remove(), 300);
+  }, 3500);
+}
+
+function requestNotificationPermission() {
+  if ("Notification" in window && Notification.permission === "default") {
+    Notification.requestPermission();
+  }
+}
+
+function sendBrowserNotification(title, body) {
+  if ("Notification" in window && Notification.permission === "granted") {
+    new Notification(title, { 
+      body, 
+      icon: "https://cdn-icons-png.flaticon.com/512/2693/2693507.png", // Иконка планировщика
+      badge: "https://cdn-icons-png.flaticon.com/512/2693/2693507.png"
+    });
+  }
+}
+
+// Проверка задач каждую минуту для напоминаний
+setInterval(() => {
+  const now = new Date();
+  const currentTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+  const today = todayISO();
+  let changed = false;
+
+  tasks.forEach(t => {
+    if (t.date === today && t.time === currentTime && t.status !== "done" && t.status !== "cancelled" && !t.notified) {
+      sendBrowserNotification("DayFlow: Напоминание ⏰", `Пора начать: ${t.title}`);
+      showToast(`Напоминание: ${t.title}`, "info");
+      t.notified = true; // Помечаем, чтобы не спамить
+      changed = true;
+    }
+  });
+
+  if (changed) saveTasks();
+}, 30000); // Проверка каждые 30 секунд
+// ================================
+
 function saveTasks() { localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks)); }
+
 function escapeHTML(value="") {
   return String(value).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
+
 function formatDate(iso) {
   return new Date(iso+"T12:00:00").toLocaleDateString("ru-RU", {day:"numeric", month:"long", year:"numeric"});
 }
+
 function pluralTasks(n) {
   const mod10=n%10, mod100=n%100;
   if(mod10===1 && mod100!==11) return "задача";
@@ -76,6 +134,7 @@ function closeModal() {
   const modal = $("taskModal");
   if (modal) modal.classList.add("hidden"); 
 }
+
 function toggleSportFields() { 
   const sf = $("sportFields");
   const tc = $("taskCategory");
@@ -210,6 +269,7 @@ function applyTheme() {
 function toggleTheme() {
   localStorage.setItem("dayflow_theme", document.body.classList.contains("dark") ? "light" : "dark");
   applyTheme();
+  showToast("Тема изменена", "success");
 }
 
 function updateNoteForDate() {
@@ -276,12 +336,23 @@ function init() {
         priority: $("taskPriority").value,
         status: $("taskStatus").value,
         sportType: $("sportType").value,
-        sportGoal: $("sportGoal").value.trim()
+        sportGoal: $("sportGoal").value.trim(),
+        notified: false // Сбрасываем флаг уведомления при редактировании
       };
       
-      if (id) tasks = tasks.map(t => t.id === id ? item : t); 
-      else tasks.push(item);
+      if (id) {
+        tasks = tasks.map(t => t.id === id ? item : t);
+        showToast("Задача обновлена", "success");
+      } else {
+        tasks.push(item);
+        showToast("Задача успешно добавлена", "success");
+      }
       
+      // Запрашиваем разрешение на уведомления, если указано время
+      if (item.time) {
+        requestNotificationPermission();
+      }
+
       saveTasks();
       selectedDate = item.date;
       activeCategory = "all"; 
@@ -306,7 +377,12 @@ function init() {
       const id = e.target.dataset.statusId;
       if (!id) return;
       const task = tasks.find(t => t.id === id);
-      if (task) { task.status = e.target.value; saveTasks(); renderTasks(); }
+      if (task) { 
+        task.status = e.target.value; 
+        if (task.status === "done") showToast("Отличная работа! Задача выполнена", "success");
+        saveTasks(); 
+        renderTasks(); 
+      }
     });
     
     taskList.addEventListener("click", e => {
@@ -320,7 +396,10 @@ function init() {
         const task = tasks.find(t => t.id === del.dataset.deleteId);
         if (task && confirm(`Удалить задачу «${task.title}»?`)) {
           tasks = tasks.filter(t => t.id !== task.id);
-          saveTasks(); renderTasks(); renderCategoryCounts();
+          saveTasks(); 
+          renderTasks(); 
+          renderCategoryCounts();
+          showToast("Задача удалена", "error");
         }
       }
     });
@@ -386,13 +465,20 @@ function init() {
   const note = $("dailyNote");
   if (note) {
     updateNoteForDate();
+    let saveTimeout;
     note.addEventListener("input", () => {
-      localStorage.setItem("dayflow_note_" + selectedDate, note.value);
+      clearTimeout(saveTimeout);
       const hint = $("noteSaved");
-      if (hint) {
-        hint.textContent = "Сохранено автоматически";
-        setTimeout(() => { if (hint) hint.textContent = "Заметка сохраняется автоматически"; }, 2000);
-      }
+      if (hint) hint.textContent = "Сохранение...";
+      
+      saveTimeout = setTimeout(() => {
+        localStorage.setItem("dayflow_note_" + selectedDate, note.value);
+        if (hint) {
+          hint.textContent = "✓ Сохранено автоматически";
+          showToast("Заметка сохранена", "success");
+          setTimeout(() => { if (hint) hint.textContent = "Заметка сохраняется автоматически"; }, 2000);
+        }
+      }, 800); // Debounce для сохранения
     });
   }
 
