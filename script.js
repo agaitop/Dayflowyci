@@ -41,7 +41,6 @@ function showToast(message, type = "info") {
   
   container.appendChild(toast);
   
-  // Автоматическое удаление через 3.5 секунды
   setTimeout(() => {
     toast.style.animation = "toastFadeOut 0.3s forwards";
     setTimeout(() => toast.remove(), 300);
@@ -58,7 +57,7 @@ function sendBrowserNotification(title, body) {
   if ("Notification" in window && Notification.permission === "granted") {
     new Notification(title, { 
       body, 
-      icon: "https://cdn-icons-png.flaticon.com/512/2693/2693507.png", // Иконка планировщика
+      icon: "https://cdn-icons-png.flaticon.com/512/2693/2693507.png",
       badge: "https://cdn-icons-png.flaticon.com/512/2693/2693507.png"
     });
   }
@@ -75,13 +74,13 @@ setInterval(() => {
     if (t.date === today && t.time === currentTime && t.status !== "done" && t.status !== "cancelled" && !t.notified) {
       sendBrowserNotification("DayFlow: Напоминание ⏰", `Пора начать: ${t.title}`);
       showToast(`Напоминание: ${t.title}`, "info");
-      t.notified = true; // Помечаем, чтобы не спамить
+      t.notified = true;
       changed = true;
     }
   });
 
   if (changed) saveTasks();
-}, 30000); // Проверка каждые 30 секунд
+}, 30000);
 // ================================
 
 function saveTasks() { localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks)); }
@@ -478,7 +477,7 @@ function init() {
           showToast("Заметка сохранена", "success");
           setTimeout(() => { if (hint) hint.textContent = "Заметка сохраняется автоматически"; }, 2000);
         }
-      }, 800); // Debounce для сохранения
+      }, 800);
     });
   }
 
