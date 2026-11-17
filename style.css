@@ -399,147 +399,128 @@ body.dark .cat-rest, body.dark .cat-personal, body.dark .cat-ideas {
   background: #26364d; color: #dbeafe;
 }
 
-
-/* ============================================================
-   NUTRITION MODULE — добавлено, существующие стили не изменены
-   ============================================================ */
-:root {
-  --cal-color: #142b4a;
-  --pro-color: #16a34a;
-  --fat-color: #d97706;
-  --carb-color: #2563eb;
-  --over-color: #dc2626;
+/* === NUTRITION PAGE (только добавлено, существующие стили не изменены) === */
+.nutrition-rings-panel { margin-bottom: 24px; }
+.nutrition-rings {
+  display: grid; grid-template-columns: 1.3fr 1fr 1fr 1fr;
+  gap: 24px; align-items: center;
 }
-body.dark {
-  --cal-color: #60a5fa;
-  --pro-color: #4ade80;
-  --fat-color: #fbbf24;
-  --carb-color: #60a5fa;
-  --over-color: #f87171;
-}
-
-/* Кольца */
-.ring { position: relative; display: grid; place-items: center; }
-.ring svg { width: 100%; height: 100%; overflow: visible; }
-.ring-bg { fill: none; stroke: var(--surface-alt); stroke-width: 9; }
-body.dark .ring-bg { stroke: #27272a; }
+.ring-block { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+.ring { position: relative; width: 96px; height: 96px; }
+.ring-main .ring { width: 150px; height: 150px; }
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); display: block; }
+.ring-track { fill: none; stroke: var(--surface-alt); stroke-width: 8; }
+.ring-main .ring-track { stroke-width: 9; }
 .ring-fill {
-  fill: none; stroke-width: 9; stroke-linecap: round;
-  transform: rotate(-90deg); transform-origin: 50% 50%;
-  transition: stroke-dashoffset .6s cubic-bezier(.2,.8,.2,1), stroke .3s ease;
+  fill: none; stroke-width: 8; stroke-linecap: round;
+  transition: stroke-dashoffset 0.5s ease;
 }
-.ring-cal { stroke: var(--cal-color); }
-.ring-pro { stroke: var(--pro-color); }
-.ring-fat { stroke: var(--fat-color); }
-.ring-carb { stroke: var(--carb-color); }
-.ring-lg { width: 172px; height: 172px; }
-.ring-sm { width: 78px; height: 78px; }
-.ring-sm .ring-bg, .ring-sm .ring-fill { stroke-width: 7; }
-.ring-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 2px; }
-.ring-lg .ring-center strong { font-size: 30px; font-weight: 600; letter-spacing: -.02em; line-height: 1; }
-.ring-lg .ring-center span { font-size: 11px; color: var(--text-muted); }
-.ring-sm .ring-center strong { font-size: 17px; font-weight: 600; line-height: 1; }
-.ring-sm .ring-center span { font-size: 10px; color: var(--text-muted); }
+.ring-main .ring-fill { stroke-width: 9; }
+.ring-kcal .ring-fill { stroke: #142b4a; }
+.ring-protein .ring-fill { stroke: #16a34a; }
+.ring-fat .ring-fill { stroke: #ea8a00; }
+.ring-carbs .ring-fill { stroke: #2563eb; }
+body.dark .ring-kcal .ring-fill { stroke: #dbeafe; }
+body.dark .ring-protein .ring-fill { stroke: #4ade80; }
+body.dark .ring-fat .ring-fill { stroke: #fbbf24; }
+body.dark .ring-carbs .ring-fill { stroke: #60a5fa; }
+.ring-center {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 1px; pointer-events: none;
+}
+.ring-center strong { font-size: 17px; font-weight: 600; letter-spacing: -0.02em; }
+.ring-main .ring-center strong { font-size: 26px; }
+.ring-center small { font-size: 10px; color: var(--text-muted); }
+.ring-main .ring-center small { font-size: 11px; }
+.ring-caption { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+.ring-name { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; margin-top: 4px; }
+.ring-goal { font-size: 12px; color: var(--text-muted); }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.dot-protein { background: #16a34a; }
+.dot-fat { background: #ea8a00; }
+.dot-carbs { background: #2563eb; }
+body.dark .dot-protein { background: #4ade80; }
+body.dark .dot-fat { background: #fbbf24; }
+body.dark .dot-carbs { background: #60a5fa; }
 
-/* Дашборд */
-.nutrition-dashboard { display: grid; grid-template-columns: 210px minmax(0,1fr); gap: 28px; align-items: center; margin-bottom: 24px; }
-.nd-main { display: flex; flex-direction: column; align-items: center; gap: 12px; min-width: 0; }
-.nd-remaining { font-size: 13px; color: var(--text-muted); text-align: center; }
-.nd-macros { display: flex; gap: 20px; justify-content: space-around; flex-wrap: wrap; min-width: 0; }
-.macro { display: flex; flex-direction: column; align-items: center; gap: 9px; min-width: 0; }
-.macro-info { text-align: center; }
-.macro-name { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; }
-.macro-name::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); }
-.dot-pro::before { background: var(--pro-color); }
-.dot-fat::before { background: var(--fat-color); }
-.dot-carb::before { background: var(--carb-color); }
-.macro-info small { display: block; font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-.nd-footer { grid-column: 1 / -1; display: flex; justify-content: flex-end; border-top: 1px solid var(--border); padding-top: 16px; }
+.pill.macro-protein { background: #f0fdf4; color: #15803d; }
+.pill.macro-fat { background: #fffbeb; color: #b45309; }
+.pill.macro-carbs { background: #eff6ff; color: #1d4ed8; }
+body.dark .pill.macro-protein { background: #14532d; color: #bbf7d0; }
+body.dark .pill.macro-fat { background: #451a03; color: #fde68a; }
+body.dark .pill.macro-carbs { background: #1e3a8a; color: #bfdbfe; }
 
-/* Приёмы пищи */
-.meal-list { display: flex; flex-direction: column; gap: 12px; }
-.meal-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
-.meal-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-.meal-photo { width: 46px; height: 46px; border-radius: 8px; object-fit: cover; flex: 0 0 auto; border: 1px solid var(--border); }
-.meal-head-main { flex: 1; min-width: 0; }
-.meal-head-main strong { display: block; font-size: 14px; font-weight: 600; }
-.meal-kcal { font-size: 12px; color: var(--text-muted); }
-.meal-items { list-style: none; display: flex; flex-direction: column; gap: 7px; margin-bottom: 12px; }
-.meal-items li { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; }
-.meal-items li span:first-child { min-width: 0; overflow-wrap: anywhere; }
-.meal-items li span:last-child { color: var(--text-muted); white-space: nowrap; }
-.meal-macros { display: flex; gap: 16px; font-size: 12px; color: var(--text-muted); border-top: 1px solid var(--border); padding-top: 10px; }
+.meal-item { align-items: center; }
+.meal-thumb {
+  width: 52px; height: 52px; border-radius: var(--radius); object-fit: cover;
+  border: 1px solid var(--border); flex: 0 0 auto;
+}
 
-/* Поиск продуктов в модалке */
-.nutri-search { width: 100%; }
-.food-results { max-height: 210px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 16px; }
-.food-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); transition: .15s; }
-.food-row:last-child { border-bottom: none; }
-.food-row:hover { background: var(--surface-alt); }
-.food-row-main { flex: 1; min-width: 0; }
-.food-row-main strong { display: block; font-size: 13px; font-weight: 500; overflow-wrap: anywhere; }
-.food-row-main small { font-size: 11px; color: var(--text-muted); }
-.food-row-add { width: 26px; height: 26px; border-radius: 6px; display: grid; place-items: center; background: var(--surface-alt); color: var(--primary); flex: 0 0 auto; }
-body.dark .food-row-add { color: #dbeafe; }
-.food-row:hover .food-row-add { background: var(--primary); color: #fff; }
-.food-empty { padding: 16px; font-size: 13px; color: var(--text-muted); text-align: center; }
+.photo-upload {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 12px; background: var(--surface-alt); border: 1px dashed var(--border);
+  border-radius: var(--radius); font-size: 13px; font-weight: 500;
+  color: var(--text-muted); cursor: pointer; transition: 0.15s;
+}
+.photo-upload:hover { background: var(--surface); color: var(--text); border-color: var(--text-muted); }
+.photo-preview { display: flex; align-items: flex-start; gap: 8px; margin-top: 10px; }
+.photo-preview img {
+  width: 96px; height: 96px; object-fit: cover;
+  border-radius: var(--radius); border: 1px solid var(--border);
+}
 
-/* Свой продукт */
-.custom-food { margin-bottom: 16px; }
-.custom-toggle { font-size: 13px; font-weight: 500; color: var(--primary); padding: 4px 0; }
-body.dark .custom-toggle { color: #93c5fd; }
-.custom-form { margin-top: 12px; padding: 14px; background: var(--surface-alt); border-radius: var(--radius); }
-.form-row.four { grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.food-preview {
+  min-height: 20px; font-size: 13px; font-weight: 600;
+  color: var(--text); margin-bottom: 12px;
+}
+.nutrition-submit { width: 100%; justify-content: center; }
 
-/* Состав приёма (черновик) */
-.draft { border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 16px; }
-.draft-title { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 10px; }
-.draft-list { display: flex; flex-direction: column; gap: 8px; }
-.draft-empty { font-size: 13px; color: var(--text-muted); }
-.draft-row { display: flex; align-items: center; gap: 10px; }
-.draft-name { flex: 1; min-width: 0; font-size: 13px; overflow-wrap: anywhere; }
-.draft-grams { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; }
-.draft-grams input { width: 66px; padding: 6px 8px; background: var(--surface-alt); border: 1px solid var(--border); border-radius: 6px; font-size: 13px; text-align: right; outline: none; }
-.draft-grams input:focus { border-color: var(--primary); }
-.draft-grams span { font-size: 12px; color: var(--text-muted); }
-.draft-kcal { font-size: 12px; color: var(--text-muted); white-space: nowrap; min-width: 62px; text-align: right; }
-.draft-preview { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); font-size: 13px; font-weight: 600; }
+/* Поиск еды: подсказки, выбранный продукт, честное сообщение */
+.food-search-group { position: relative; }
+.food-suggestions {
+  position: absolute; left: 0; right: 0; top: 66px; z-index: 30;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12); overflow: hidden; max-height: 260px; overflow-y: auto;
+}
+.food-suggestion {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  width: 100%; padding: 10px 12px; text-align: left; transition: 0.15s;
+  border-bottom: 1px solid var(--border);
+}
+.food-suggestion:last-child { border-bottom: none; }
+.food-suggestion:hover { background: var(--surface-alt); }
+.food-suggestion span { font-size: 13px; font-weight: 500; }
+.food-suggestion small { font-size: 11px; color: var(--text-muted); }
+.selected-food-chip {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  margin-top: 8px; padding: 8px 10px; background: var(--surface-alt);
+  border: 1px solid var(--border); border-radius: var(--radius);
+}
+.selected-food-chip span { font-size: 12px; font-weight: 500; line-height: 1.4; }
+.selected-food-chip .mini-action { flex: 0 0 auto; width: 26px; height: 26px; }
+.own-food-button {
+  margin-top: 8px; font-size: 12px; font-weight: 500; color: var(--text-muted);
+  text-decoration: underline; text-underline-offset: 3px; transition: 0.15s;
+}
+.own-food-button:hover { color: var(--text); }
+.unknown-food-notice {
+  padding: 12px 14px; margin-bottom: 16px; border-radius: var(--radius);
+  background: #fffbeb; border: 1px solid #fde68a; color: #92400e;
+  font-size: 12px; line-height: 1.55;
+}
+.unknown-food-notice strong { display: block; margin-bottom: 4px; font-size: 13px; }
+body.dark .unknown-food-notice { background: #451a03; border-color: #92400e; color: #fde68a; }
 
-/* Фото */
-.photo-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.photo-add { display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; border: 1px dashed var(--border); border-radius: var(--radius); font-size: 13px; color: var(--text-muted); cursor: pointer; transition: .15s; }
-.photo-add:hover { border-color: var(--primary); color: var(--text); }
-.photo-preview { position: relative; width: 74px; height: 74px; }
-.photo-preview img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); }
-.photo-remove { position: absolute; top: -7px; right: -7px; width: 22px; height: 22px; border-radius: 50%; background: var(--text); color: var(--bg); display: grid; place-items: center; }
-.photo-remove .icon, .photo-remove svg { width: 12px; height: 12px; }
-
-.modal-wide { width: min(560px, 100%); }
-.goals-hint { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; line-height: 1.5; }
-
-/* Карточка-сводка на главной */
-.nutrition-summary { display: flex; align-items: center; gap: 14px; transition: .15s; }
-.nutrition-summary:hover { border-color: var(--text-muted); }
-.ns-ring { width: 48px; height: 48px; flex: 0 0 auto; position: relative; }
-.ns-ring svg { width: 100%; height: 100%; overflow: visible; }
-.ns-ring .ring-bg, .ns-ring .ring-fill { stroke-width: 5; }
-.ns-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.ns-label { font-size: 12px; color: var(--text-muted); }
-.ns-info strong { font-size: 15px; font-weight: 600; }
-.ns-info small { font-size: 11px; color: var(--text-muted); }
-.ns-arrow { width: 16px; height: 16px; color: var(--text-muted); flex: 0 0 auto; }
-
+@media (max-width: 1024px) {
+  .nutrition-rings { grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .ring-main .ring { width: 120px; height: 120px; }
+  .ring-main .ring-center strong { font-size: 22px; }
+}
 @media (max-width: 768px) {
-  .nutrition-dashboard { grid-template-columns: 1fr; gap: 22px; justify-items: center; }
-  .nd-macros { width: 100%; justify-content: space-between; gap: 12px; }
-  .nd-footer { width: 100%; }
-  .nd-footer .secondary-button { width: 100%; }
-  .form-row.four { grid-template-columns: 1fr 1fr; }
-  .meal-macros { flex-wrap: wrap; gap: 10px; }
-  .draft-kcal { min-width: 54px; }
-}
-@media (max-width: 480px) {
-  .ring-lg { width: 150px; height: 150px; }
-  .ring-sm { width: 70px; height: 70px; }
-  .nd-macros { gap: 8px; }
+  .nutrition-rings { grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .ring-main { grid-column: 1 / -1; }
+  .ring { width: 84px; height: 84px; }
+  .ring-center strong { font-size: 15px; }
+  .meal-item { flex-wrap: nowrap; }
+  .meal-thumb { width: 44px; height: 44px; }
 }
