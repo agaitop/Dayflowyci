@@ -1,201 +1,668 @@
-/* DayFlow — client-side planner. Works on GitHub Pages (HTTPS). */
 "use strict";
 
 const STORAGE_KEY = "dayflow_tasks_v1";
+const FOOD_KEY = "dayflow_food_log_v1";
+const CUSTOM_KEY = "dayflow_custom_products_v1";
+const GOALS_KEY = "dayflow_nutrition_goals";
+
 const CATEGORIES = {
-  study: "Учёба", sport: "Спорт", work: "Работа",
-  rest: "Отдых", personal: "Личное", ideas: "Идеи"
+  study:    { label: "Учёба",   icon: "i-book" },
+  sport:    { label: "Спорт",   icon: "i-bolt" },
+  work:     { label: "Работа",  icon: "i-case" },
+  rest:     { label: "Отдых",   icon: "i-smile" },
+  personal: { label: "Личное",  icon: "i-heart" },
+  ideas:    { label: "Идеи",    icon: "i-star" }
 };
+
 const STATUSES = {
-  todo: "Не начато",
-  doing: "В работе",
-  done: "Готово",
-  cancelled: "Отменено"
+  todo:      { label: "Не начато",  cls: "st-todo",      color: "#9aa2b1" },
+  doing:     { label: "В процессе", cls: "st-doing",     color: "#4388e8" },
+  done:      { label: "Выполнено",  cls: "st-done",      color: "#20a36a" },
+  cancelled: { label: "Отменено",   cls: "st-cancelled", color: "#df5555" }
 };
 
+const PRIORITIES = {
+  high:   { label: "Высокий", cls: "pr-high",   order: 0 },
+  normal: { label: "Обычный", cls: "pr-normal", order: 1 },
+  low:    { label: "Низкий",  cls: "pr-low",    order: 2 }
+};
+
+/* ===== БАЗА ПРОДУКТОВ (на 100 г) ===== */
+const FOOD_DB = [
+  { id: "chicken",  name: "Куриная грудка",   cat: "meat",    kcal: 165, p: 31,   f: 3.6,  c: 0 },
+  { id: "beef",     name: "Говядина",         cat: "meat",    kcal: 187, p: 18.9, f: 12.4, c: 0 },
+  { id: "egg",      name: "Яйцо куриное",     cat: "meat",    kcal: 157, p: 12.7, f: 11.5, c: 0.7 },
+  { id: "salmon",   name: "Лосось",           cat: "fish",    kcal: 208, p: 20,   f: 13,   c: 0 },
+  { id: "tuna",     name: "Тунец консерв.",   cat: "fish",    kcal: 96,  p: 21,   f: 1,    c: 0 },
+  { id: "rice",     name: "Рис (сухой)",      cat: "grains",  kcal: 344, p: 6.7,  f: 0.7,  c: 78.9 },
+  { id: "buckwheat",name: "Гречка (сухая)",   cat: "grains",  kcal: 343, p: 12.6, f: 3.3,  c: 71.5 },
+  { id: "oats",     name: "Овсянка (сухая)",  cat: "grains",  kcal: 366, p: 11.9, f: 7.2,  c: 69.3 },
+  { id: "pasta",    name: "Макароны (сухие)", cat: "grains",  kcal: 350, p: 12,   f: 1.5,  c: 70 },
+  { id: "bread",    name: "Хлеб цельнозерн.", cat: "grains",  kcal: 247, p: 13,   f: 3.4,  c: 41 },
+  { id: "milk",     name: "Молоко 2.5%",      cat: "dairy",   kcal: 52,  p: 2.8,  f: 2.5,  c: 4.7 },
+  { id: "cottage",  name: "Творог 5%",        cat: "dairy",   kcal: 121, p: 17.2, f: 5,    c: 1.8 },
+  { id: "yogurt",   name: "Йогурт натур.",    cat: "dairy",   kcal: 60,  p: 4,    f: 1.5,  c: 7 },
+  { id: "cheese",   name: "Сыр твёрдый",      cat: "dairy",   kcal: 364, p: 24,   f: 29,   c: 0.3 },
+  { id: "kefir",    name: "Кефир 1%",         cat: "dairy",   kcal: 40,  p: 3,    f: 1,    c: 4 },
+  { id: "banana",   name: "Банан",            cat: "fruit",   kcal: 95,  p: 1.5,  f: 0.2,  c: 21.8 },
+  { id: "apple",    name: "Яблоко",           cat: "fruit",   kcal: 47,  p: 0.4,  f: 0.4,  c: 9.8 },
+  { id: "orange",   name: "Апельсин",         cat: "fruit",   kcal: 43,  p: 0.9,  f: 0.2,  c: 8.1 },
+  { id: "potato",   name: "Картофель",        cat: "veg",     kcal: 77,  p: 2,    f: 0.4,  c: 16.3 },
+  { id: "tomato",   name: "Помидор",          cat: "veg",     kcal: 20,  p: 1.1,  f: 0.2,  c: 3.7 },
+  { id: "cucumber", name: "Огурец",           cat: "veg",     kcal: 15,  p: 0.8,  f: 0.1,  c: 2.8 },
+  { id: "broccoli", name: "Брокколи",         cat: "veg",     kcal: 34,  p: 2.8,  f: 0.4,  c: 6.6 },
+  { id: "nuts",     name: "Орехи (микс)",     cat: "snacks",  kcal: 607, p: 20,   f: 54,   c: 21 },
+  { id: "chocolate",name: "Шоколад тёмный",   cat: "snacks",  kcal: 546, p: 6.2,  f: 35,   c: 48 },
+  { id: "honey",    name: "Мёд",              cat: "snacks",  kcal: 329, p: 0.8,  f: 0,    c: 81 },
+  { id: "oil",      name: "Масло оливковое",  cat: "other",   kcal: 884, p: 0,    f: 100,  c: 0 },
+  { id: "butter",   name: "Масло сливочное",  cat: "other",   kcal: 748, p: 0.5,  f: 82.5, c: 0.8 }
+];
+
+const FOOD_CATS = {
+  meat: "Мясо и яйца", fish: "Рыба", grains: "Крупы и хлеб",
+  dairy: "Молочное", fruit: "Фрукты", veg: "Овощи",
+  snacks: "Снеки", other: "Другое", custom: "Мои продукты"
+};
+
+const MEALS = { breakfast: "Завтрак", lunch: "Обед", dinner: "Ужин", snack: "Перекус" };
+
+/* ===== ХЕЛПЕРЫ ===== */
 const $ = id => document.getElementById(id);
-const pad = value => String(value).padStart(2, "0");
-const todayISO = () => {
-  const now = new Date();
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-};
-const dateISO = date =>
-  `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+const pad = n => String(n).padStart(2, "0");
+const dateISO = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const todayISO = () => dateISO(new Date());
+const nowTime = () => { const d = new Date(); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
 
-function readStorage(key, fallback = null) {
-  try {
-    const value = localStorage.getItem(key);
-    return value === null ? fallback : value;
-  } catch (error) {
-    console.error("DayFlow: не удалось прочитать localStorage.", error);
-    return fallback;
-  }
+const uid = () =>
+  (typeof crypto !== "undefined" && crypto.randomUUID)
+    ? crypto.randomUUID()
+    : "t-" + Date.now().toString(36) + "-" + Math.random().toString(16).slice(2);
+
+function escapeHTML(v = "") {
+  return String(v).replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
-function writeStorage(key, value) {
+function readJSON(key, fallback) {
   try {
-    localStorage.setItem(key, value);
-    return true;
-  } catch (error) {
-    console.error("DayFlow: не удалось сохранить данные.", error);
-    showToast("Не удалось сохранить данные. Проверьте свободное место в браузере.", "error");
-    return false;
-  }
+    const v = JSON.parse(localStorage.getItem(key));
+    return v ?? fallback;
+  } catch { return fallback; }
 }
 
-function normalizeTasks(value) {
-  if (!Array.isArray(value)) return [];
-  return value.filter(task =>
-    task && typeof task === "object" &&
-    typeof task.id === "string" &&
-    typeof task.title === "string" &&
-    typeof task.date === "string"
-  ).map(task => ({
-    ...task,
-    category: CATEGORIES[task.category] ? task.category : "personal",
-    status: STATUSES[task.status] ? task.status : "todo",
-    priority: ["high", "normal", "low"].includes(task.priority) ? task.priority : "normal",
-    description: String(task.description || ""),
-    time: String(task.time || ""),
-    notified: Boolean(task.notified)
+function writeJSON(key, value) {
+  try { localStorage.setItem(key, JSON.stringify(value)); return true; }
+  catch { showToast("Хранилище переполнено", "error"); return false; }
+}
+
+/* ===== СОСТОЯНИЕ ===== */
+let tasks = readJSON(STORAGE_KEY, []);
+if (!Array.isArray(tasks)) tasks = [];
+tasks = tasks
+  .filter(t => t && typeof t.title === "string" && typeof t.date === "string")
+  .map(t => ({
+    id: typeof t.id === "string" ? t.id : uid(),
+    title: t.title,
+    description: t.description || "",
+    category: CATEGORIES[t.category] ? t.category : "personal",
+    date: t.date,
+    time: t.time || "",
+    priority: PRIORITIES[t.priority] ? t.priority : "normal",
+    status: STATUSES[t.status] ? t.status : "todo",
+    sportType: t.sportType || "",
+    sportGoal: t.sportGoal || "",
+    notified: !!t.notified,
+    createdAt: t.createdAt || Date.now()
   }));
-}
 
-function loadTasks() {
-  try {
-    const raw = readStorage(STORAGE_KEY, "[]");
-    return normalizeTasks(JSON.parse(raw));
-  } catch (error) {
-    console.error("DayFlow: повреждён список задач.", error);
-    showToast("Не удалось прочитать список задач. Проверьте данные браузера.", "error");
-    return [];
-  }
-}
+let foodLog = readJSON(FOOD_KEY, {});
+if (typeof foodLog !== "object" || Array.isArray(foodLog)) foodLog = {};
 
-let tasks = loadTasks();
+let customProducts = readJSON(CUSTOM_KEY, []);
+if (!Array.isArray(customProducts)) customProducts = [];
+
+const goalsRaw = readJSON(GOALS_KEY, null);
+let nutritionGoals = {
+  kcal: Number(goalsRaw?.kcal) > 0 ? Number(goalsRaw.kcal) : 2200,
+  p:    Number(goalsRaw?.p)    > 0 ? Number(goalsRaw.p)    : 140,
+  f:    Number(goalsRaw?.f)    > 0 ? Number(goalsRaw.f)    : 70,
+  c:    Number(goalsRaw?.c)    > 0 ? Number(goalsRaw.c)    : 250
+};
+
 let selectedDate = todayISO();
 let activeStatus = "all";
-let activeCategory = new URLSearchParams(location.search).get("category") || "all";
 let searchQuery = "";
-let notificationTimer = null;
+let sortMode = "priority";
 
-if (!Object.hasOwn(CATEGORIES, activeCategory)) activeCategory = "all";
+const urlCat = new URLSearchParams(location.search).get("category");
+let activeCategory = (urlCat && CATEGORIES[urlCat]) ? urlCat : "all";
 
-function showToast(message, type = "info") {
-  const container = $("toast-container");
-  if (!container) return;
-  const toast = document.createElement("div");
-  toast.className = `toast${type === "error" ? " toast-error" : ""}`;
-  toast.setAttribute("role", type === "error" ? "alert" : "status");
-  toast.textContent = message;
-  container.appendChild(toast);
-  window.setTimeout(() => {
-    toast.style.animation = "toastOut 0.3s forwards";
-    window.setTimeout(() => toast.remove(), 300);
-  }, 3200);
+function saveTasks() { writeJSON(STORAGE_KEY, tasks); }
+
+function pluralTasks(n) {
+  const m10 = n % 10, m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return "задача";
+  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return "задачи";
+  return "задач";
 }
 
-function saveTasks() {
-  return writeStorage(STORAGE_KEY, JSON.stringify(tasks));
+function formatDate(iso) {
+  return new Date(iso + "T12:00:00").toLocaleDateString("ru-RU",
+    { day: "numeric", month: "long", year: "numeric" });
+}
+
+/* ===== УВЕДОМЛЕНИЯ ===== */
+const TOAST_ICONS = { success: "i-check-circle", error: "i-x", info: "i-info", reminder: "i-clock" };
+
+function showToast(message, type = "info", action = null) {
+  const container = $("toast-container");
+  if (!container) return;
+  while (container.children.length >= 3) container.firstChild.remove();
+
+  const toast = document.createElement("div");
+  toast.className = `toast ${type}`;
+  toast.innerHTML =
+    `<svg class="icon" aria-hidden="true"><use href="#${TOAST_ICONS[type] || "i-info"}"></use></svg>` +
+    `<span>${escapeHTML(message)}</span>`;
+
+  let removed = false;
+  const dismiss = () => {
+    if (removed) return;
+    removed = true;
+    toast.style.animation = "toastOut .25s forwards";
+    setTimeout(() => toast.remove(), 260);
+  };
+
+  if (action) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "toast-action";
+    btn.textContent = action.label;
+    btn.addEventListener("click", () => { action.onClick(); dismiss(); });
+    toast.appendChild(btn);
+  }
+
+  container.appendChild(toast);
+  setTimeout(dismiss, action ? 6000 : 3500);
 }
 
 function requestNotificationPermission() {
-  if (!("Notification" in window) || !window.isSecureContext) {
-    showToast("Браузерные уведомления доступны на защищённом HTTPS-сайте.");
-    return;
-  }
-  if (Notification.permission === "default") {
-    Notification.requestPermission().catch(error => {
-      console.warn("DayFlow: разрешение на уведомления не получено.", error);
-    });
+  if ("Notification" in window && Notification.permission === "default") {
+    Notification.requestPermission().catch(() => {});
   }
 }
 
 function sendBrowserNotification(title, body) {
-  if (!("Notification" in window) || !window.isSecureContext ||
-      Notification.permission !== "granted") return;
   try {
-    new Notification(title, { body });
-  } catch (error) {
-    console.warn("DayFlow: уведомление недоступно.", error);
-  }
+    if ("Notification" in window && Notification.permission === "granted") {
+      new Notification(title, { body });
+    }
+  } catch { /* iOS без PWA */ }
 }
 
-function checkDueTasks() {
-  const now = new Date();
+function checkReminders() {
   const today = todayISO();
-  const currentTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  const time = nowTime();
   let changed = false;
 
-  tasks.forEach(task => {
-    if (task.date !== today || !task.time ||
-        ["done", "cancelled"].includes(task.status) || task.notified) return;
-
-    if (task.time <= currentTime) {
-      showToast(`⏰ Пора: ${task.title}`);
-      sendBrowserNotification("DayFlow", `Время задачи: ${task.title}`);
-      task.notified = true;
+  tasks.forEach(t => {
+    if (t.date === today && t.time && !t.notified &&
+        (t.status === "todo" || t.status === "doing") && t.time <= time) {
+      showToast(`Напоминание: ${t.title}`, "reminder");
+      sendBrowserNotification("DayFlow — напоминание", `Пора начать: ${t.title}`);
+      t.notified = true;
       changed = true;
     }
   });
 
-  if (changed) {
-    saveTasks();
-    renderTasks();
-    renderCategoryCounts();
+  if (changed) { saveTasks(); renderTasks(); }
+}
+
+/* ===== ТЕМА ===== */
+function applyTheme() {
+  const dark = localStorage.getItem("dayflow_theme") === "dark";
+  document.body.classList.toggle("dark", dark);
+  document.querySelectorAll(".icon-moon").forEach(el => el.classList.toggle("hidden", dark));
+  document.querySelectorAll(".icon-sun").forEach(el => el.classList.toggle("hidden", !dark));
+  const label = $("themeLabel");
+  if (label) label.textContent = dark ? "Светлая тема" : "Тёмная тема";
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute("content", dark ? "#111a27" : "#f3f5f8");
+}
+
+function toggleTheme() {
+  localStorage.setItem("dayflow_theme",
+    document.body.classList.contains("dark") ? "light" : "dark");
+  applyTheme();
+  showToast("Тема изменена", "success");
+}
+
+/* ===== РЕНДЕР ЗАДАЧ ===== */
+function setTxt(id, val) { const el = $(id); if (el) el.textContent = val; }
+
+function renderWeekStrip() {
+  const strip = $("weekStrip");
+  if (!strip) return;
+  const sel = new Date(selectedDate + "T12:00:00");
+  const mon = new Date(sel);
+  mon.setDate(mon.getDate() - ((mon.getDay() + 6) % 7));
+  const names = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+  const today = todayISO();
+
+  strip.innerHTML = names.map((name, i) => {
+    const d = new Date(mon); d.setDate(mon.getDate() + i);
+    const iso = dateISO(d);
+    const count = tasks.filter(t => t.date === iso).length;
+    const cls = ["week-day",
+      iso === selectedDate ? "selected" : "",
+      iso === today ? "is-today" : ""].filter(Boolean).join(" ");
+    return `<button type="button" class="${cls}" data-week-date="${iso}">
+      <span>${name}</span><strong>${d.getDate()}</strong><small>${count || "—"}</small>
+    </button>`;
+  }).join("");
+}
+
+function sortTasks(list) {
+  const arr = [...list];
+  if (sortMode === "time") arr.sort((a, b) => (a.time || "99:99").localeCompare(b.time || "99:99"));
+  else if (sortMode === "title") arr.sort((a, b) => a.title.localeCompare(b.title, "ru"));
+  else if (sortMode === "created") arr.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  else arr.sort((a, b) =>
+    (PRIORITIES[a.priority].order - PRIORITIES[b.priority].order) ||
+    (a.time || "99:99").localeCompare(b.time || "99:99"));
+  return arr;
+}
+
+function renderTasks() {
+  const list = $("taskList");
+  if (!list) return;
+
+  const dayTasks = tasks.filter(t => t.date === selectedDate);
+  const q = searchQuery.toLowerCase();
+  const filtered = sortTasks(dayTasks.filter(t => {
+    const okStatus = activeStatus === "all" || t.status === activeStatus;
+    const okCat = activeCategory === "all" || t.category === activeCategory;
+    const okSearch = !q || [t.title, t.description, t.sportType, t.sportGoal]
+      .some(v => String(v || "").toLowerCase().includes(q));
+    return okStatus && okCat && okSearch;
+  }));
+
+  const done = dayTasks.filter(t => t.status === "done").length;
+  const doing = dayTasks.filter(t => t.status === "doing").length;
+  const todo = dayTasks.filter(t => t.status === "todo").length;
+
+  setTxt("totalCount", dayTasks.length);
+  setTxt("doneCount", done);
+  setTxt("progressCount", doing);
+  setTxt("remainingCount", todo);
+
+  const pct = dayTasks.length ? Math.round(done / dayTasks.length * 100) : 0;
+  setTxt("progressPercent", pct + "%");
+  const bar = $("progressBar"); if (bar) bar.style.width = pct + "%";
+  setTxt("taskCountHint", `Показано ${filtered.length} из ${dayTasks.length}`);
+
+  list.innerHTML = filtered.map(t => {
+    const cat = CATEGORIES[t.category];
+    const st = STATUSES[t.status];
+    const pr = PRIORITIES[t.priority];
+    const sport = t.category === "sport" && (t.sportType || t.sportGoal)
+      ? `<div class="task-description">${escapeHTML(t.sportType || "Активность")}${t.sportGoal ? " · цель: " + escapeHTML(t.sportGoal) : ""}</div>` : "";
+
+    return `<article class="task-item">
+      <div class="task-color" style="background:${st.color}"></div>
+      <div class="task-main">
+        <div class="task-title">${escapeHTML(t.title)}</div>
+        ${t.description ? `<div class="task-description">${escapeHTML(t.description)}</div>` : ""}${sport}
+        <div class="task-meta">
+          <span class="pill cat-${t.category}">${cat.label}</span>
+          <span class="pill ${st.cls}">${st.label}</span>
+          <span class="pill ${pr.cls}">${pr.label}</span>
+          ${t.time ? `<span class="task-time"><svg class="icon"><use href="#i-clock"></use></svg>${escapeHTML(t.time)}</span>` : ""}
+        </div>
+      </div>
+      <div class="task-actions">
+        <select class="status-select" aria-label="Статус задачи" data-status-id="${t.id}">
+          ${Object.entries(STATUSES).map(([key, s]) =>
+            `<option value="${key}" ${t.status === key ? "selected" : ""}>${s.label}</option>`).join("")}
+        </select>
+        <button type="button" class="mini-action" title="Изменить" aria-label="Изменить задачу" data-edit-id="${t.id}">
+          <svg class="icon"><use href="#i-edit"></use></svg>
+        </button>
+        <button type="button" class="mini-action delete-action" title="Удалить" aria-label="Удалить задачу" data-delete-id="${t.id}">
+          <svg class="icon"><use href="#i-trash"></use></svg>
+        </button>
+      </div>
+    </article>`;
+  }).join("");
+
+  const empty = $("emptyState");
+  if (empty) {
+    const hasDay = dayTasks.length > 0;
+    empty.classList.toggle("hidden", filtered.length > 0);
+    list.classList.toggle("hidden", filtered.length === 0);
+    const h = empty.querySelector("h3"), p = empty.querySelector("p");
+    if (h && p) {
+      h.textContent = hasDay ? "Ничего не найдено" : "Список пуст";
+      p.textContent = hasDay ? "Попробуй изменить поиск или фильтры." : "Добавь первую задачу — она появится здесь.";
+    }
   }
+
+  setTxt("fullDate", "План · " + formatDate(selectedDate));
+  renderWeekStrip();
 }
 
-function startNotificationChecks() {
-  checkDueTasks();
-  if (notificationTimer !== null) window.clearInterval(notificationTimer);
-  notificationTimer = window.setInterval(checkDueTasks, 30000);
-}
-
-function escapeHTML(value = "") {
-  return String(value).replace(/[&<>"']/g, char => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-  })[char]);
-}
-
-function formatDate(iso) {
-  return new Date(`${iso}T12:00:00`).toLocaleDateString("ru-RU", {
-    day: "numeric", month: "long", year: "numeric"
+function renderCategoryCounts() {
+  Object.keys(CATEGORIES).forEach(key => {
+    const el = $("count-" + key);
+    if (el) {
+      const n = tasks.filter(t => t.category === key).length;
+      el.textContent = `${n} ${pluralTasks(n)}`;
+    }
   });
 }
 
-function pluralTasks(number) {
-  const last = number % 10;
-  const lastTwo = number % 100;
-  if (last === 1 && lastTwo !== 11) return "задача";
-  if (last >= 2 && last <= 4 && (lastTwo < 12 || lastTwo > 14)) return "задачи";
-  return "задач";
+function updateHeader() {
+  setTxt("headerDate", new Date().toLocaleDateString("ru-RU",
+    { weekday: "short", day: "numeric", month: "short" }));
+  const g = $("greeting");
+  if (g) {
+    const h = new Date().getHours();
+    const word = h >= 5 && h < 12 ? "Доброе утро"
+      : h >= 12 && h < 18 ? "Добрый день"
+      : h >= 18 && h < 23 ? "Добрый вечер" : "Доброй ночи";
+    g.textContent = `${word}, Ибрагим.`;
+  }
+}
+
+function updateNoteForDate() {
+  const note = $("dailyNote");
+  if (note) note.value = localStorage.getItem("dayflow_note_" + selectedDate) || "";
 }
 
 function setDate(date) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
   selectedDate = date;
-  const input = $("selectedDate");
-  if (input) input.value = date;
+  const inp = $("selectedDate"); if (inp) inp.value = date;
   renderTasks();
   updateNoteForDate();
+  renderNutritionSummary();
 }
 
-function createId() {
-  if (window.crypto && typeof window.crypto.randomUUID === "function") {
-    return window.crypto.randomUUID();
+/* ===== ПИТАНИЕ ===== */
+function allProducts() {
+  return [...FOOD_DB, ...customProducts.map(p => ({ ...p, cat: "custom" }))];
+}
+
+function dayTotals(iso) {
+  const entries = foodLog[iso] || [];
+  return entries.reduce((acc, e) => {
+    acc.kcal += e.kcal; acc.p += e.p; acc.f += e.f; acc.c += e.c;
+    return acc;
+  }, { kcal: 0, p: 0, f: 0, c: 0 });
+}
+
+function renderNutritionSummary() {
+  const el = $("nutritionSummary");
+  if (!el) return;
+  const t = dayTotals(selectedDate);
+  el.textContent = `${Math.round(t.kcal)} / ${nutritionGoals.kcal} ккал`;
+  const ring = $("kcalRingMini");
+  if (ring) {
+    const pct = Math.min(t.kcal / nutritionGoals.kcal, 1);
+    ring.style.strokeDashoffset = String(100 * (1 - pct));
   }
-  return `task-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function initNutritionPage() {
+  const page = $("nutritionPage");
+  if (!page) return;
+
+  const dateInput = $("foodDate");
+  if (dateInput) {
+    dateInput.value = selectedDate;
+    dateInput.addEventListener("change", e => {
+      if (e.target.value) { selectedDate = e.target.value; renderNutritionPage(); }
+    });
+  }
+
+  $("addFoodBtn")?.addEventListener("click", openFoodModal);
+  $("goalsBtn")?.addEventListener("click", openGoalsModal);
+  $("closeFoodModal")?.addEventListener("click", () => $("foodModal")?.classList.add("hidden"));
+  $("cancelFoodModal")?.addEventListener("click", () => $("foodModal")?.classList.add("hidden"));
+  $("foodModal")?.addEventListener("click", e => { if (e.target === $("foodModal")) $("foodModal").classList.add("hidden"); });
+  $("closeGoalsModal")?.addEventListener("click", () => $("goalsModal")?.classList.add("hidden"));
+  $("goalsModal")?.addEventListener("click", e => { if (e.target === $("goalsModal")) $("goalsModal").classList.add("hidden"); });
+
+  $("foodSearch")?.addEventListener("input", renderFoodPicker);
+  $("foodCatFilter")?.addEventListener("change", renderFoodPicker);
+
+  $("foodForm")?.addEventListener("submit", e => {
+    e.preventDefault();
+    const productId = $("foodProductSelect").value;
+    const grams = Number($("foodGrams").value);
+    const meal = $("foodMeal").value;
+    const product = allProducts().find(p => p.id === productId);
+    if (!product || !(grams > 0)) { showToast("Выбери продукт и граммы", "error"); return; }
+
+    const k = grams / 100;
+    const entry = {
+      id: uid(), meal,
+      name: product.name, grams,
+      kcal: Math.round(product.kcal * k),
+      p: +(product.p * k).toFixed(1),
+      f: +(product.f * k).toFixed(1),
+      c: +(product.c * k).toFixed(1),
+      photo: pendingPhoto || ""
+    };
+
+    if (!foodLog[selectedDate]) foodLog[selectedDate] = [];
+    foodLog[selectedDate].push(entry);
+    if (writeJSON(FOOD_KEY, foodLog)) {
+      showToast("Приём пищи добавлен", "success");
+      pendingPhoto = "";
+      $("foodModal").classList.add("hidden");
+      renderNutritionPage();
+    } else {
+      foodLog[selectedDate].pop();
+    }
+  });
+
+  $("customProductForm")?.addEventListener("submit", e => {
+    e.preventDefault();
+    const name = $("cpName").value.trim();
+    const kcal = Number($("cpKcal").value);
+    if (name.length < 2 || !(kcal >= 0)) { showToast("Заполни название и калории", "error"); return; }
+    customProducts.push({
+      id: uid(), name,
+      kcal,
+      p: Number($("cpP").value) || 0,
+      f: Number($("cpF").value) || 0,
+      c: Number($("cpC").value) || 0
+    });
+    writeJSON(CUSTOM_KEY, customProducts);
+    showToast("Продукт добавлен в твою базу", "success");
+    $("customProductForm").reset();
+    renderFoodPicker();
+  });
+
+  $("goalsForm")?.addEventListener("submit", e => {
+    e.preventDefault();
+    const g = {
+      kcal: Number($("goalKcal").value),
+      p: Number($("goalP").value),
+      f: Number($("goalF").value),
+      c: Number($("goalC").value)
+    };
+    if (!(g.kcal > 0 && g.p > 0 && g.f > 0 && g.c > 0)) { showToast("Все нормы должны быть больше нуля", "error"); return; }
+    nutritionGoals = g;
+    writeJSON(GOALS_KEY, g);
+    showToast("Нормы обновлены", "success");
+    $("goalsModal").classList.add("hidden");
+    renderNutritionPage();
+  });
+
+  $("foodPhoto")?.addEventListener("change", async e => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    pendingPhoto = await compressPhoto(file);
+    const prev = $("photoPreview");
+    if (prev) { prev.src = pendingPhoto; prev.classList.remove("hidden"); }
+  });
+
+  $("foodLogList")?.addEventListener("click", e => {
+    const del = e.target.closest("[data-food-del]");
+    if (!del) return;
+    const entries = foodLog[selectedDate] || [];
+    const idx = entries.findIndex(x => x.id === del.dataset.foodDel);
+    if (idx === -1) return;
+    const [removed] = entries.splice(idx, 1);
+    writeJSON(FOOD_KEY, foodLog);
+    renderNutritionPage();
+    showToast("Запись удалена", "error", {
+      label: "Вернуть",
+      onClick: () => {
+        entries.splice(Math.min(idx, entries.length), 0, removed);
+        writeJSON(FOOD_KEY, foodLog);
+        renderNutritionPage();
+        showToast("Запись восстановлена", "success");
+      }
+    });
+  });
+
+  renderNutritionPage();
+}
+
+let pendingPhoto = "";
+
+function compressPhoto(file) {
+  return new Promise(resolve => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const max = 800;
+      const scale = Math.min(max / img.width, max / img.height, 1);
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL("image/jpeg", 0.7));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(""); };
+    img.src = url;
+  });
+}
+
+function renderFoodPicker() {
+  const wrap = $("foodPickerList");
+  if (!wrap) return;
+  const q = ($("foodSearch")?.value || "").trim().toLowerCase();
+  const cat = $("foodCatFilter")?.value || "all";
+  const list = allProducts().filter(p =>
+    (cat === "all" || p.cat === cat) && (!q || p.name.toLowerCase().includes(q)));
+
+  wrap.innerHTML = list.map(p =>
+    `<button type="button" class="food-pick ${$("foodProductSelect")?.value === p.id ? "selected" : ""}" data-pick="${p.id}">
+      <span>${escapeHTML(p.name)}</span>
+      <small>${p.kcal} ккал · Б ${p.p} · Ж ${p.f} · У ${p.c}</small>
+    </button>`).join("") || `<p class="muted">Ничего не найдено</p>`;
+
+  const select = $("foodProductSelect");
+  if (select) {
+    select.innerHTML = allProducts().map(p =>
+      `<option value="${p.id}">${escapeHTML(p.name)}</option>`).join("");
+  }
+
+  wrap.querySelectorAll("[data-pick]").forEach(btn => btn.addEventListener("click", () => {
+    if (select) select.value = btn.dataset.pick;
+    wrap.querySelectorAll(".food-pick").forEach(b => b.classList.toggle("selected", b === btn));
+    $("foodGrams")?.focus();
+  }));
+}
+
+function openFoodModal() {
+  const modal = $("foodModal");
+  if (!modal) return;
+  $("foodForm").reset();
+  pendingPhoto = "";
+  $("photoPreview")?.classList.add("hidden");
+  renderFoodPicker();
+  modal.classList.remove("hidden");
+}
+
+function openGoalsModal() {
+  const modal = $("goalsModal");
+  if (!modal) return;
+  $("goalKcal").value = nutritionGoals.kcal;
+  $("goalP").value = nutritionGoals.p;
+  $("goalF").value = nutritionGoals.f;
+  $("goalC").value = nutritionGoals.c;
+  modal.classList.remove("hidden");
+}
+
+function renderNutritionPage() {
+  const t = dayTotals(selectedDate);
+  const C = 2 * Math.PI * 52;
+
+  const ring = $("kcalRing");
+  if (ring) {
+    ring.style.strokeDasharray = String(C);
+    ring.style.strokeDashoffset = String(C * (1 - Math.min(t.kcal / nutritionGoals.kcal, 1)));
+  }
+  setTxt("kcalText", `${Math.round(t.kcal)}`);
+  setTxt("kcalGoalText", `из ${nutritionGoals.kcal} ккал`);
+
+  const macro = (id, val, goal) => {
+    const bar = $(id + "Bar");
+    if (bar) bar.style.width = Math.min(val / goal * 100, 100) + "%";
+    setTxt(id + "Text", `${Math.round(val)} / ${goal} г`);
+  };
+  macro("macroP", t.p, nutritionGoals.p);
+  macro("macroF", t.f, nutritionGoals.f);
+  macro("macroC", t.c, nutritionGoals.c);
+
+  const list = $("foodLogList");
+  if (list) {
+    const entries = foodLog[selectedDate] || [];
+    if (!entries.length) {
+      list.innerHTML = `<p class="muted" style="padding:16px 0">Пока нет записей. Добавь первый приём пищи.</p>`;
+    } else {
+      list.innerHTML = Object.keys(MEALS).map(meal => {
+        const items = entries.filter(e => e.meal === meal);
+        if (!items.length) return "";
+        return `<div class="meal-group">
+          <h3>${MEALS[meal]}</h3>
+          ${items.map(e => `<div class="food-entry">
+            ${e.photo ? `<img src="${e.photo}" alt="" class="food-thumb">` : ""}
+            <div class="food-entry-main">
+              <strong>${escapeHTML(e.name)} · ${e.grams} г</strong>
+              <small>${e.kcal} ккал · Б ${e.p} · Ж ${e.f} · У ${e.c}</small>
+            </div>
+            <button type="button" class="mini-action delete-action" data-food-del="${e.id}" aria-label="Удалить запись">
+              <svg class="icon"><use href="#i-trash"></use></svg>
+            </button>
+          </div>`).join("")}
+        </div>`;
+      }).join("");
+    }
+  }
+
+  setTxt("foodDateLabel", formatDate(selectedDate));
+  renderNutritionSummary();
+}
+
+/* ===== МОДАЛКА ЗАДАЧ ===== */
+function toggleSportFields() {
+  const sf = $("sportFields"), tc = $("taskCategory");
+  if (sf && tc) sf.classList.toggle("hidden", tc.value !== "sport");
 }
 
 function openModal(category = "study", task = null) {
   const modal = $("taskModal");
-  const form = $("taskForm");
-  if (!modal || !form) return;
-
-  form.reset();
+  if (!modal) return;
+  $("taskForm").reset();
+  $("taskTitle").setCustomValidity("");
   $("taskId").value = task?.id || "";
-  $("modalTitle").textContent = task ? "Редактировать задачу" : "Новая задача";
+  $("modalTitle").textContent = task ? "Изменить задачу" : "Новая задача";
   $("taskTitle").value = task?.title || "";
   $("taskDescription").value = task?.description || "";
   $("taskCategory").value = task?.category || category;
@@ -207,175 +674,10 @@ function openModal(category = "study", task = null) {
   $("sportGoal").value = task?.sportGoal || "";
   toggleSportFields();
   modal.classList.remove("hidden");
-  $("taskTitle")?.focus();
+  setTimeout(() => $("taskTitle").focus(), 50);
 }
 
-function closeModal() {
-  $("taskModal")?.classList.add("hidden");
-}
-
-function toggleSportFields() {
-  $("sportFields")?.classList.toggle("hidden", $("taskCategory")?.value !== "sport");
-}
-
-function renderWeekStrip() {
-  const strip = $("weekStrip");
-  if (!strip) return;
-
-  const selected = new Date(`${selectedDate}T12:00:00`);
-  const monday = new Date(selected);
-  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
-  const names = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
-
-  strip.innerHTML = names.map((name, index) => {
-    const date = new Date(monday);
-    date.setDate(monday.getDate() + index);
-    const iso = dateISO(date);
-    const count = tasks.filter(task => task.date === iso).length;
-    return `<button type="button" class="week-day ${iso === selectedDate ? "selected" : ""}"
-      data-week-date="${iso}" aria-pressed="${iso === selectedDate}">
-      <span>${name}</span><strong>${date.getDate()}</strong><small>${count || "—"}</small>
-    </button>`;
-  }).join("");
-}
-
-function renderTasks() {
-  const list = $("taskList");
-  if (!list) return;
-
-  const dayTasks = tasks.filter(task => task.date === selectedDate);
-  const query = searchQuery.toLocaleLowerCase("ru");
-  const filtered = dayTasks.filter(task => {
-    const matchesStatus = activeStatus === "all" || task.status === activeStatus;
-    const matchesCategory = activeCategory === "all" || task.category === activeCategory;
-    const matchesQuery = !query ||
-      [task.title, task.description].some(value =>
-        String(value || "").toLocaleLowerCase("ru").includes(query));
-    return matchesStatus && matchesCategory && matchesQuery;
-  }).sort((a, b) => {
-    const order = { high: 0, normal: 1, low: 2 };
-    return order[a.priority] - order[b.priority] ||
-      (a.time || "99:99").localeCompare(b.time || "99:99");
-  });
-
-  const done = dayTasks.filter(task => task.status === "done").length;
-  const doing = dayTasks.filter(task => task.status === "doing").length;
-  const remaining = dayTasks.filter(task => task.status === "todo").length;
-  const setText = (id, value) => { const element = $(id); if (element) element.textContent = value; };
-
-  setText("totalCount", dayTasks.length);
-  setText("doneCount", done);
-  setText("progressCount", doing);
-  setText("remainingCount", remaining);
-
-  const percent = dayTasks.length ? Math.round(done / dayTasks.length * 100) : 0;
-  setText("progressPercent", `${percent}%`);
-  const bar = $("progressBar");
-  if (bar) bar.style.width = `${percent}%`;
-  setText("taskCountHint", `${filtered.length} из ${dayTasks.length} ${pluralTasks(dayTasks.length)}`);
-
-  list.innerHTML = filtered.map(task => {
-    const categoryName = CATEGORIES[task.category] || CATEGORIES.personal;
-    const statusName = STATUSES[task.status] || STATUSES.todo;
-    const extra = task.category === "sport" && (task.sportType || task.sportGoal)
-      ? `<div class="task-description">${escapeHTML(task.sportType)}${task.sportGoal ? ` · ${escapeHTML(task.sportGoal)}` : ""}</div>`
-      : "";
-    const statusOptions = Object.entries(STATUSES).map(([key, label]) =>
-      `<option value="${key}" ${task.status === key ? "selected" : ""}>${label}</option>`
-    ).join("");
-
-    return `<article class="task-item">
-      <div class="task-main">
-        <div class="task-title">${escapeHTML(task.title)}</div>
-        ${task.description ? `<div class="task-description">${escapeHTML(task.description)}</div>` : ""}
-        ${extra}
-        <div class="task-meta">
-          <span class="pill">${escapeHTML(categoryName)}</span>
-          <span class="task-time">${task.time ? `◷ ${escapeHTML(task.time)}` : ""}</span>
-        </div>
-      </div>
-      <label class="status-control">
-        <span class="hidden">Статус задачи ${escapeHTML(task.title)}</span>
-        <select class="task-status-select status-${task.status}" data-task-status="${escapeHTML(task.id)}"
-          aria-label="Статус задачи: ${escapeHTML(task.title)}">
-          ${statusOptions}
-        </select>
-      </label>
-      <div class="task-actions">
-        <button type="button" class="mini-action" data-edit-id="${escapeHTML(task.id)}"
-          title="Изменить" aria-label="Изменить задачу">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-          </svg>
-        </button>
-        <button type="button" class="mini-action delete-action" data-delete-id="${escapeHTML(task.id)}"
-          title="Удалить" aria-label="Удалить задачу">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="3 6 5 6 21 6"/>
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-          </svg>
-        </button>
-      </div>
-    </article>`;
-  }).join("");
-
-  const emptyState = $("emptyState");
-  if (emptyState) {
-    const hasTasks = dayTasks.length > 0;
-    emptyState.classList.toggle("hidden", filtered.length > 0);
-    list.classList.toggle("hidden", filtered.length === 0);
-    const heading = emptyState.querySelector("h3");
-    const paragraph = emptyState.querySelector("p");
-    if (heading) heading.textContent = hasTasks ? "Ничего не найдено" : "Список пуст";
-    if (paragraph) paragraph.textContent = hasTasks
-      ? "Измените фильтры или поисковый запрос."
-      : "Добавьте первую задачу.";
-  }
-
-  const fullDate = $("fullDate");
-  if (fullDate) fullDate.textContent = formatDate(selectedDate).toUpperCase();
-  renderWeekStrip();
-}
-
-function renderCategoryCounts() {
-  Object.keys(CATEGORIES).forEach(key => {
-    const element = $(`count-${key}`);
-    if (element) {
-      const count = tasks.filter(task => task.category === key).length;
-      element.textContent = `${count} ${pluralTasks(count)}`;
-    }
-  });
-}
-
-function updateHeader() {
-  const element = $("headerDate");
-  if (element) element.textContent = new Date().toLocaleDateString("ru-RU", {
-    weekday: "short", day: "numeric", month: "short"
-  });
-}
-
-function applyTheme() {
-  const dark = readStorage("dayflow_theme", "light") === "dark";
-  document.body.classList.toggle("dark", dark);
-  document.querySelectorAll(".icon-moon").forEach(icon => icon.classList.toggle("hidden", dark));
-  document.querySelectorAll(".icon-sun").forEach(icon => icon.classList.toggle("hidden", !dark));
-  const label = $("themeLabel");
-  if (label) label.textContent = dark ? "Светлая тема" : "Тёмная тема";
-}
-
-function toggleTheme() {
-  const nextTheme = document.body.classList.contains("dark") ? "light" : "dark";
-  if (writeStorage("dayflow_theme", nextTheme)) {
-    applyTheme();
-    showToast("Тема изменена");
-  }
-}
-
-function updateNoteForDate() {
-  const note = $("dailyNote");
-  if (note) note.value = readStorage(`dayflow_note_${selectedDate}`, "");
-}
+function closeModal() { $("taskModal")?.classList.add("hidden"); }
 
 function closeMenu() {
   $("sidebar")?.classList.remove("open");
@@ -383,28 +685,23 @@ function closeMenu() {
   $("menuToggle")?.setAttribute("aria-expanded", "false");
 }
 
-function setStatusFilter(status) {
-  activeStatus = status;
-  document.querySelectorAll("[data-status]").forEach(button => {
-    button.classList.toggle("selected", button.dataset.status === status);
-    button.setAttribute("aria-pressed", String(button.dataset.status === status));
-  });
-}
-
+/* ===== INIT ===== */
 function init() {
   updateHeader();
   applyTheme();
   renderTasks();
   renderCategoryCounts();
   updateNoteForDate();
-  startNotificationChecks();
+  renderNutritionSummary();
+  initNutritionPage();
+  checkReminders();
+  setInterval(checkReminders, 25000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) checkReminders(); });
 
   const dateInput = $("selectedDate");
   if (dateInput) {
     dateInput.value = selectedDate;
-    dateInput.addEventListener("change", event => {
-      if (event.target.value) setDate(event.target.value);
-    });
+    dateInput.addEventListener("change", e => { if (e.target.value) setDate(e.target.value); });
   }
 
   $("addTaskTop")?.addEventListener("click", () => openModal());
@@ -412,720 +709,180 @@ function init() {
   $("closeModal")?.addEventListener("click", closeModal);
   $("cancelModal")?.addEventListener("click", closeModal);
   $("taskCategory")?.addEventListener("change", toggleSportFields);
-  $("taskModal")?.addEventListener("click", event => {
-    if (event.target === $("taskModal")) closeModal();
-  });
+  $("taskModal")?.addEventListener("click", e => { if (e.target === $("taskModal")) closeModal(); });
+  $("taskTitle")?.addEventListener("input", e => e.target.setCustomValidity(""));
 
-  $("taskForm")?.addEventListener("submit", event => {
-    event.preventDefault();
+  $("taskForm")?.addEventListener("submit", e => {
+    e.preventDefault();
     const titleInput = $("taskTitle");
     const title = titleInput.value.trim();
     if (title.length < 2) {
-      titleInput.setCustomValidity("Введите не менее двух символов.");
+      titleInput.setCustomValidity("Введите название хотя бы из двух символов.");
       titleInput.reportValidity();
-      titleInput.addEventListener("input", () => titleInput.setCustomValidity(""), { once: true });
       return;
     }
-    titleInput.setCustomValidity("");
+    if (!$("taskDate").value) { $("taskDate").reportValidity(); return; }
 
     const id = $("taskId").value;
+    const prev = tasks.find(t => t.id === id);
     const date = $("taskDate").value;
-    if (!date) {
-      $("taskDate").reportValidity();
-      return;
-    }
+    const time = $("taskTime").value;
 
-    const previous = tasks.find(task => task.id === id);
     const item = {
-      ...(previous || {}),
-      id: id || createId(),
+      id: id || uid(),
       title,
       description: $("taskDescription").value.trim(),
       category: $("taskCategory").value,
-      date,
-      time: $("taskTime").value,
+      date, time,
       priority: $("taskPriority").value,
       status: $("taskStatus").value,
       sportType: $("sportType").value,
       sportGoal: $("sportGoal").value.trim(),
-      notified: previous && previous.date === date && previous.time === $("taskTime").value
-        ? previous.notified : false
+      notified: (prev && prev.date === date && prev.time === time) ? prev.notified : false,
+      createdAt: prev?.createdAt || Date.now()
     };
 
-    const previousTasks = tasks;
-    tasks = id ? tasks.map(task => task.id === id ? item : task) : [...tasks, item];
-    if (!saveTasks()) {
-      tasks = previousTasks;
-      return;
+    if (id) {
+      tasks = tasks.map(t => t.id === id ? item : t);
+      showToast("Задача обновлена", "success");
+    } else {
+      tasks.push(item);
+      showToast("Задача создана", "success");
     }
 
-    showToast(id ? "Задача обновлена" : "Задача создана");
     if (item.time) requestNotificationPermission();
+    saveTasks();
 
     selectedDate = item.date;
     activeCategory = "all";
-    setStatusFilter("all");
+    activeStatus = "all";
     searchQuery = "";
     if (dateInput) dateInput.value = selectedDate;
-    if ($("taskSearch")) $("taskSearch").value = "";
+    const search = $("taskSearch"); if (search) search.value = "";
+    document.querySelectorAll("[data-status]").forEach(b =>
+      b.classList.toggle("selected", b.dataset.status === "all"));
+    document.querySelectorAll("[data-filter]").forEach(b =>
+      b.classList.toggle("active", b.dataset.filter === "all"));
+
     closeModal();
     renderTasks();
     renderCategoryCounts();
     updateNoteForDate();
   });
 
-  $("taskList")?.addEventListener("change", event => {
-    const select = event.target.closest("[data-task-status]");
-    if (!select) return;
-    const task = tasks.find(item => item.id === select.dataset.taskStatus);
-    if (!task || !STATUSES[select.value]) return;
-    const oldStatus = task.status;
-    task.status = select.value;
-    if (!saveTasks()) {
-      task.status = oldStatus;
-      renderTasks();
+  $("taskList")?.addEventListener("change", e => {
+    const id = e.target.dataset.statusId;
+    if (!id) return;
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+    task.status = e.target.value;
+    saveTasks();
+    renderTasks();
+    if (task.status === "done") showToast("Задача выполнена. Отличная работа", "success");
+    if (task.status === "cancelled") showToast("Задача отменена", "info");
+  });
+
+  $("taskList")?.addEventListener("click", e => {
+    const editBtn = e.target.closest("[data-edit-id]");
+    const delBtn = e.target.closest("[data-delete-id]");
+
+    if (editBtn) {
+      const task = tasks.find(t => t.id === editBtn.dataset.editId);
+      if (task) openModal(task.category, task);
       return;
     }
-    showToast(`Статус изменён: ${STATUSES[task.status]}`);
-    renderTasks();
-    renderCategoryCounts();
-  });
 
-  $("taskList")?.addEventListener("click", event => {
-    const editButton = event.target.closest("[data-edit-id]");
-    const deleteButton = event.target.closest("[data-delete-id]");
-
-    if (editButton) {
-      const task = tasks.find(item => item.id === editButton.dataset.editId);
-      if (task) openModal(task.category, task);
-    }
-
-    if (deleteButton) {
-      const task = tasks.find(item => item.id === deleteButton.dataset.deleteId);
-      if (task && window.confirm("Удалить задачу?")) {
-        const previousTasks = tasks;
-        tasks = tasks.filter(item => item.id !== task.id);
-        if (!saveTasks()) {
-          tasks = previousTasks;
-          return;
+    if (delBtn) {
+      const index = tasks.findIndex(t => t.id === delBtn.dataset.deleteId);
+      if (index === -1) return;
+      const [removed] = tasks.splice(index, 1);
+      saveTasks();
+      renderTasks();
+      renderCategoryCounts();
+      showToast("Задача удалена", "error", {
+        label: "Вернуть",
+        onClick: () => {
+          tasks.splice(Math.min(index, tasks.length), 0, removed);
+          saveTasks();
+          renderTasks();
+          renderCategoryCounts();
+          showToast("Задача восстановлена", "success");
         }
-        renderTasks();
-        renderCategoryCounts();
-        showToast("Задача удалена");
-      }
+      });
     }
   });
 
-  $("weekStrip")?.addEventListener("click", event => {
-    const button = event.target.closest("[data-week-date]");
-    if (button) setDate(button.dataset.weekDate);
+  $("weekStrip")?.addEventListener("click", e => {
+    const btn = e.target.closest("[data-week-date]");
+    if (btn) setDate(btn.dataset.weekDate);
   });
 
-  $("taskSearch")?.addEventListener("input", event => {
-    searchQuery = event.target.value.trim();
+  $("taskSearch")?.addEventListener("input", e => { searchQuery = e.target.value.trim(); renderTasks(); });
+  $("taskSort")?.addEventListener("change", e => { sortMode = e.target.value; renderTasks(); });
+
+  document.querySelectorAll("[data-status]").forEach(btn => btn.addEventListener("click", () => {
+    activeStatus = btn.dataset.status;
+    document.querySelectorAll("[data-status]").forEach(b => b.classList.toggle("selected", b === btn));
     renderTasks();
-  });
+  }));
 
-  document.querySelectorAll("[data-status]").forEach(button => {
-    button.addEventListener("click", () => {
-      setStatusFilter(button.dataset.status);
-      renderTasks();
-    });
-  });
+  document.querySelectorAll("[data-filter]").forEach(btn => btn.addEventListener("click", () => {
+    activeCategory = btn.dataset.filter;
+    activeStatus = "all";
+    document.querySelectorAll("[data-status]").forEach(b =>
+      b.classList.toggle("selected", b.dataset.status === "all"));
+    document.querySelectorAll("[data-filter]").forEach(b => b.classList.toggle("active", b === btn));
+    renderTasks();
+    $("taskList")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }));
+  document.querySelectorAll("[data-filter]").forEach(b =>
+    b.classList.toggle("active", b.dataset.filter === activeCategory));
 
-  document.querySelectorAll("[data-filter]").forEach(button => {
-    button.addEventListener("click", () => {
-      activeCategory = button.dataset.filter;
-      setStatusFilter("all");
-      document.querySelectorAll("[data-filter]").forEach(item =>
-        item.classList.toggle("active", item === button));
-      renderTasks();
-      closeMenu();
-    });
-  });
-
-  document.querySelectorAll("[data-category]").forEach(button => {
-    button.addEventListener("click", () => openModal(button.dataset.category));
-  });
+  document.querySelectorAll("[data-category]").forEach(btn =>
+    btn.addEventListener("click", () => openModal(btn.dataset.category)));
 
   $("prevDay")?.addEventListener("click", () => {
-    const date = new Date(`${selectedDate}T12:00:00`);
-    date.setDate(date.getDate() - 1);
-    setDate(dateISO(date));
+    const d = new Date(selectedDate + "T12:00:00"); d.setDate(d.getDate() - 1); setDate(dateISO(d));
   });
   $("nextDay")?.addEventListener("click", () => {
-    const date = new Date(`${selectedDate}T12:00:00`);
-    date.setDate(date.getDate() + 1);
-    setDate(dateISO(date));
+    const d = new Date(selectedDate + "T12:00:00"); d.setDate(d.getDate() + 1); setDate(dateISO(d));
   });
 
   $("themeToggle")?.addEventListener("click", toggleTheme);
   $("themeToggleTop")?.addEventListener("click", toggleTheme);
 
   $("menuToggle")?.addEventListener("click", () => {
-    const sidebar = $("sidebar");
-    const isOpen = sidebar?.classList.toggle("open");
-    $("navBackdrop")?.classList.toggle("visible", Boolean(isOpen));
-    $("menuToggle")?.setAttribute("aria-expanded", String(Boolean(isOpen)));
+    const open = $("sidebar")?.classList.toggle("open");
+    $("navBackdrop")?.classList.toggle("visible", !!open);
+    $("menuToggle")?.setAttribute("aria-expanded", String(!!open));
   });
   $("navBackdrop")?.addEventListener("click", closeMenu);
-  $("sidebar")?.querySelectorAll("a, button").forEach(item => {
-    item.addEventListener("click", () => {
-      if (window.innerWidth <= 768) closeMenu();
-    });
-  });
-  document.addEventListener("keydown", event => {
-    if (event.key === "Escape") {
-      closeMenu();
-      closeModal();
+  $("sidebar")?.querySelectorAll("a, button").forEach(el =>
+    el.addEventListener("click", () => { if (window.innerWidth <= 768) closeMenu(); }));
+
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape") {
+      closeMenu(); closeModal();
+      $("foodModal")?.classList.add("hidden");
+      $("goalsModal")?.classList.add("hidden");
     }
   });
 
   const note = $("dailyNote");
   if (note) {
-    let saveTimeout;
+    let timer;
     note.addEventListener("input", () => {
-      window.clearTimeout(saveTimeout);
+      clearTimeout(timer);
       const hint = $("noteSaved");
-      if (hint) hint.textContent = "Сохранение…";
-      saveTimeout = window.setTimeout(() => {
-        if (writeStorage(`dayflow_note_${selectedDate}`, note.value) && hint) {
-          hint.textContent = "Сохранено";
-        }
-      }, 450);
+      if (hint) hint.textContent = "Сохранение...";
+      timer = setTimeout(() => {
+        try { localStorage.setItem("dayflow_note_" + selectedDate, note.value); } catch {}
+        if (hint) hint.textContent = "Сохранено";
+        showToast("Заметка сохранена", "success");
+        setTimeout(() => { if (hint) hint.textContent = "Сохраняется автоматически"; }, 2200);
+      }, 700);
     });
   }
-
-  // Ошибки JS видны в консоли и не остаются незамеченными пользователем.
-  window.addEventListener("error", event => {
-    console.error("DayFlow: ошибка JavaScript.", event.error || event.message);
-    showToast("Возникла ошибка интерфейса. Обновите страницу.", "error");
-  });
-  window.addEventListener("unhandledrejection", event => {
-    console.error("DayFlow: необработанная ошибка операции.", event.reason);
-    showToast("Не удалось выполнить операцию.", "error");
-  });
 }
 
 document.addEventListener("DOMContentLoaded", init);
-
-
-/* ============================================================
-   NUTRITION MODULE — добавлено отдельно.
-   Использует общие helpers выше ($, readStorage, writeStorage,
-   showToast, escapeHTML, createId, todayISO, dateISO, pad).
-   Своих имён, конфликтующих с планировщиком, не создаёт.
-   ============================================================ */
-
-const NUTRI_MEALS_KEY = "dayflow_meals_v1";
-const NUTRI_GOALS_KEY = "dayflow_goals_v1";
-const NUTRI_CUSTOM_KEY = "dayflow_custom_foods_v1";
-const NUTRI_DEFAULT_GOALS = { cal: 2200, pro: 140, fat: 70, carb: 250 };
-
-const FOOD_CATS = {
-  meat: "Мясо, рыба, яйца",
-  dairy: "Молочное",
-  grains: "Крупы и гарниры",
-  veg: "Овощи",
-  fruit: "Фрукты и ягоды",
-  other: "Орехи, хлеб и другое"
-};
-
-/* Значения на 100 г: [ккал, белки, жиры, углеводы] */
-const FOOD_DB = [
-  { id: "chicken_breast", name: "Куриная грудка", cat: "meat", cal: 165, pro: 31, fat: 3.6, carb: 0 },
-  { id: "chicken_thigh", name: "Куриное бедро", cat: "meat", cal: 209, pro: 26, fat: 11, carb: 0 },
-  { id: "turkey", name: "Индейка", cat: "meat", cal: 189, pro: 29, fat: 7, carb: 0 },
-  { id: "beef", name: "Говядина", cat: "meat", cal: 250, pro: 26, fat: 15, carb: 0 },
-  { id: "pork", name: "Свинина", cat: "meat", cal: 242, pro: 27, fat: 14, carb: 0 },
-  { id: "salmon", name: "Лосось", cat: "meat", cal: 208, pro: 20, fat: 13, carb: 0 },
-  { id: "tuna", name: "Тунец", cat: "meat", cal: 132, pro: 28, fat: 1, carb: 0 },
-  { id: "cod", name: "Треска", cat: "meat", cal: 82, pro: 18, fat: 0.7, carb: 0 },
-  { id: "shrimp", name: "Креветки", cat: "meat", cal: 99, pro: 24, fat: 0.3, carb: 0.2 },
-  { id: "egg", name: "Яйцо куриное (1 шт ≈ 60 г)", cat: "meat", cal: 155, pro: 13, fat: 11, carb: 1.1 },
-  { id: "egg_white", name: "Яичный белок", cat: "meat", cal: 52, pro: 11, fat: 0.2, carb: 0.7 },
-  { id: "milk", name: "Молоко 2.5%", cat: "dairy", cal: 52, pro: 2.8, fat: 2.5, carb: 4.7 },
-  { id: "kefir", name: "Кефир 1%", cat: "dairy", cal: 40, pro: 3, fat: 1, carb: 4 },
-  { id: "cottage", name: "Творог 5%", cat: "dairy", cal: 121, pro: 17, fat: 5, carb: 1.8 },
-  { id: "cottage0", name: "Творог 0%", cat: "dairy", cal: 71, pro: 16, fat: 0.5, carb: 1.3 },
-  { id: "yogurt", name: "Йогурт натуральный", cat: "dairy", cal: 60, pro: 4, fat: 1.5, carb: 7 },
-  { id: "cheese", name: "Сыр твёрдый", cat: "dairy", cal: 360, pro: 24, fat: 29, carb: 0 },
-  { id: "sour15", name: "Сметана 15%", cat: "dairy", cal: 158, pro: 2.6, fat: 15, carb: 3 },
-  { id: "oats", name: "Овсянка (сухая)", cat: "grains", cal: 366, pro: 12, fat: 6, carb: 62 },
-  { id: "buckwheat", name: "Гречка (сухая)", cat: "grains", cal: 343, pro: 13, fat: 3.4, carb: 72 },
-  { id: "rice", name: "Рис (сухой)", cat: "grains", cal: 344, pro: 6.7, fat: 0.7, carb: 78 },
-  { id: "rice_cooked", name: "Рис отварной", cat: "grains", cal: 116, pro: 2.2, fat: 0.5, carb: 25 },
-  { id: "buckwheat_cooked", name: "Гречка отварная", cat: "grains", cal: 110, pro: 4, fat: 1, carb: 21 },
-  { id: "pasta", name: "Макароны (сухие)", cat: "grains", cal: 350, pro: 12, fat: 1.5, carb: 72 },
-  { id: "pasta_cooked", name: "Макароны отварные", cat: "grains", cal: 158, pro: 5, fat: 1, carb: 31 },
-  { id: "potato", name: "Картофель", cat: "grains", cal: 77, pro: 2, fat: 0.1, carb: 17 },
-  { id: "potato_boiled", name: "Картофель отварной", cat: "grains", cal: 82, pro: 2, fat: 0.4, carb: 17 },
-  { id: "lentils", name: "Чечевица (сухая)", cat: "grains", cal: 352, pro: 24, fat: 1, carb: 60 },
-  { id: "chickpeas", name: "Нут (сухой)", cat: "grains", cal: 364, pro: 19, fat: 6, carb: 61 },
-  { id: "beans", name: "Фасоль (сухая)", cat: "grains", cal: 333, pro: 21, fat: 1.2, carb: 60 },
-  { id: "tomato", name: "Помидор", cat: "veg", cal: 18, pro: 0.9, fat: 0.2, carb: 3.9 },
-  { id: "cucumber", name: "Огурец", cat: "veg", cal: 15, pro: 0.7, fat: 0.1, carb: 3.6 },
-  { id: "cabbage", name: "Капуста", cat: "veg", cal: 25, pro: 1.3, fat: 0.1, carb: 5.8 },
-  { id: "carrot", name: "Морковь", cat: "veg", cal: 41, pro: 0.9, fat: 0.2, carb: 10 },
-  { id: "beet", name: "Свёкла", cat: "veg", cal: 43, pro: 1.6, fat: 0.2, carb: 9 },
-  { id: "onion", name: "Лук", cat: "veg", cal: 40, pro: 1.1, fat: 0.1, carb: 9 },
-  { id: "pepper", name: "Перец болгарский", cat: "veg", cal: 27, pro: 1, fat: 0.3, carb: 6 },
-  { id: "broccoli", name: "Брокколи", cat: "veg", cal: 34, pro: 2.8, fat: 0.4, carb: 7 },
-  { id: "spinach", name: "Шпинат", cat: "veg", cal: 23, pro: 2.9, fat: 0.4, carb: 3.6 },
-  { id: "zucchini", name: "Кабачок", cat: "veg", cal: 17, pro: 1.2, fat: 0.3, carb: 3.1 },
-  { id: "avocado", name: "Авокадо", cat: "veg", cal: 160, pro: 2, fat: 15, carb: 9 },
-  { id: "banana", name: "Банан", cat: "fruit", cal: 89, pro: 1.1, fat: 0.3, carb: 23 },
-  { id: "apple", name: "Яблоко", cat: "fruit", cal: 52, pro: 0.3, fat: 0.2, carb: 14 },
-  { id: "orange", name: "Апельсин", cat: "fruit", cal: 47, pro: 0.9, fat: 0.1, carb: 12 },
-  { id: "grape", name: "Виноград", cat: "fruit", cal: 69, pro: 0.7, fat: 0.2, carb: 18 },
-  { id: "strawberry", name: "Клубника", cat: "fruit", cal: 32, pro: 0.7, fat: 0.3, carb: 8 },
-  { id: "blueberry", name: "Черника", cat: "fruit", cal: 57, pro: 0.7, fat: 0.3, carb: 14 },
-  { id: "pear", name: "Груша", cat: "fruit", cal: 57, pro: 0.4, fat: 0.1, carb: 15 },
-  { id: "kiwi", name: "Киви", cat: "fruit", cal: 61, pro: 1.1, fat: 0.5, carb: 15 },
-  { id: "watermelon", name: "Арбуз", cat: "fruit", cal: 30, pro: 0.6, fat: 0.2, carb: 8 },
-  { id: "walnut", name: "Грецкий орех", cat: "other", cal: 654, pro: 15, fat: 65, carb: 14 },
-  { id: "almond", name: "Миндаль", cat: "other", cal: 579, pro: 21, fat: 50, carb: 22 },
-  { id: "sunflower_seed", name: "Семечки подсолнуха", cat: "other", cal: 584, pro: 21, fat: 51, carb: 20 },
-  { id: "peanut_butter", name: "Арахисовая паста", cat: "other", cal: 588, pro: 25, fat: 50, carb: 20 },
-  { id: "bread_white", name: "Хлеб белый", cat: "other", cal: 265, pro: 9, fat: 3.2, carb: 49 },
-  { id: "bread_rye", name: "Хлеб ржаной", cat: "other", cal: 259, pro: 8.5, fat: 3.3, carb: 48 },
-  { id: "chocolate", name: "Шоколад тёмный", cat: "other", cal: 546, pro: 5, fat: 31, carb: 61 },
-  { id: "honey", name: "Мёд", cat: "other", cal: 304, pro: 0.3, fat: 0, carb: 82 },
-  { id: "sugar", name: "Сахар", cat: "other", cal: 387, pro: 0, fat: 0, carb: 100 },
-  { id: "oil_olive", name: "Масло оливковое", cat: "other", cal: 884, pro: 0, fat: 100, carb: 0 },
-  { id: "oil_sun", name: "Масло подсолнечное", cat: "other", cal: 884, pro: 0, fat: 100, carb: 0 },
-  { id: "butter", name: "Масло сливочное", cat: "other", cal: 717, pro: 0.9, fat: 81, carb: 0.1 }
-];
-
-const MEAL_TYPES = { breakfast: "Завтрак", lunch: "Обед", dinner: "Ужин", snack: "Перекус" };
-
-let nutriMeals = [];
-let nutriGoals = { ...NUTRI_DEFAULT_GOALS };
-let nutriCustom = [];
-let nutriDate = todayISO();
-let nutriDraft = [];
-let nutriPhoto = "";
-
-function nutriNum(value) {
-  const n = Number(value);
-  return Number.isFinite(n) && n >= 0 ? n : 0;
-}
-function nutriRound(value) { return Math.round(value); }
-function nutriOne(value) { return Math.round(value * 10) / 10; }
-
-function nutriLoadJSON(key, fallback) {
-  try {
-    const parsed = JSON.parse(readStorage(key, "null"));
-    return parsed === null ? fallback : parsed;
-  } catch (error) {
-    console.error("DayFlow nutrition: повреждены данные.", error);
-    return fallback;
-  }
-}
-
-function nutriLoadState() {
-  const meals = nutriLoadJSON(NUTRI_MEALS_KEY, []);
-  nutriMeals = Array.isArray(meals) ? meals.filter(m =>
-    m && typeof m.id === "string" && typeof m.date === "string" && Array.isArray(m.items)
-  ) : [];
-
-  const goals = nutriLoadJSON(NUTRI_GOALS_KEY, null);
-  nutriGoals = {
-    cal: nutriNum(goals?.cal) || NUTRI_DEFAULT_GOALS.cal,
-    pro: nutriNum(goals?.pro) || NUTRI_DEFAULT_GOALS.pro,
-    fat: nutriNum(goals?.fat) || NUTRI_DEFAULT_GOALS.fat,
-    carb: nutriNum(goals?.carb) || NUTRI_DEFAULT_GOALS.carb
-  };
-
-  const custom = nutriLoadJSON(NUTRI_CUSTOM_KEY, []);
-  nutriCustom = Array.isArray(custom) ? custom.filter(f =>
-    f && typeof f.id === "string" && typeof f.name === "string"
-  ) : [];
-}
-
-function nutriSaveMeals() { return writeStorage(NUTRI_MEALS_KEY, JSON.stringify(nutriMeals)); }
-function nutriSaveGoals() { return writeStorage(NUTRI_GOALS_KEY, JSON.stringify(nutriGoals)); }
-function nutriSaveCustom() { return writeStorage(NUTRI_CUSTOM_KEY, JSON.stringify(nutriCustom)); }
-
-function nutriAllFoods() { return FOOD_DB.concat(nutriCustom); }
-function nutriFindFood(id) { return nutriAllFoods().find(f => f.id === id); }
-function nutriCatLabel(cat) { return FOOD_CATS[cat] || "Своё"; }
-
-function nutriItemMacros(item) {
-  const factor = (Number(item.grams) || 0) / 100;
-  return {
-    cal: (Number(item.cal) || 0) * factor,
-    pro: (Number(item.pro) || 0) * factor,
-    fat: (Number(item.fat) || 0) * factor,
-    carb: (Number(item.carb) || 0) * factor
-  };
-}
-function nutriSumItems(items) {
-  const total = { cal: 0, pro: 0, fat: 0, carb: 0 };
-  (items || []).forEach(item => {
-    const m = nutriItemMacros(item);
-    total.cal += m.cal; total.pro += m.pro; total.fat += m.fat; total.carb += m.carb;
-  });
-  return total;
-}
-function nutriDayTotals(date) {
-  const total = { cal: 0, pro: 0, fat: 0, carb: 0 };
-  nutriMeals.filter(m => m.date === date).forEach(meal => {
-    const m = nutriSumItems(meal.items);
-    total.cal += m.cal; total.pro += m.pro; total.fat += m.fat; total.carb += m.carb;
-  });
-  return total;
-}
-
-function nutriSetRing(id, value, goal) {
-  const circle = $(id);
-  if (!circle) return;
-  const radius = Number(circle.getAttribute("r")) || 52;
-  const circumference = 2 * Math.PI * radius;
-  const ratio = goal > 0 ? value / goal : 0;
-  const clamped = Math.max(0, Math.min(ratio, 1));
-  circle.style.strokeDasharray = `${circumference}`;
-  circle.style.strokeDashoffset = `${circumference * (1 - clamped)}`;
-  circle.style.stroke = ratio > 1 ? "var(--over-color)" : "";
-}
-
-function nutriRenderDashboard() {
-  const total = nutriDayTotals(nutriDate);
-  const setText = (id, value) => { const el = $(id); if (el) el.textContent = value; };
-
-  setText("calValue", nutriRound(total.cal));
-  setText("calGoal", nutriGoals.cal);
-  const left = nutriGoals.cal - total.cal;
-  setText("calRemaining", left >= 0 ? `Осталось ${nutriRound(left)} ккал` : `Перебор ${nutriRound(-left)} ккал`);
-  nutriSetRing("ringCal", total.cal, nutriGoals.cal);
-
-  setText("proValue", nutriRound(total.pro));
-  setText("fatValue", nutriRound(total.fat));
-  setText("carbValue", nutriRound(total.carb));
-  setText("proGoal", `цель ${nutriGoals.pro} г`);
-  setText("fatGoal", `цель ${nutriGoals.fat} г`);
-  setText("carbGoal", `цель ${nutriGoals.carb} г`);
-  nutriSetRing("ringPro", total.pro, nutriGoals.pro);
-  nutriSetRing("ringFat", total.fat, nutriGoals.fat);
-  nutriSetRing("ringCarb", total.carb, nutriGoals.carb);
-}
-
-function nutriRenderMeals() {
-  const list = $("mealList");
-  const empty = $("mealEmpty");
-  if (!list) return;
-
-  const meals = nutriMeals
-    .filter(m => m.date === nutriDate)
-    .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
-
-  list.innerHTML = meals.map(meal => {
-    const total = nutriSumItems(meal.items);
-    const items = meal.items.map(item => {
-      const m = nutriItemMacros(item);
-      return `<li><span>${escapeHTML(item.name)} · ${nutriRound(item.grams)} г</span><span>${nutriRound(m.cal)} ккал</span></li>`;
-    }).join("");
-    const photo = meal.photo
-      ? `<img class="meal-photo" src="${meal.photo}" alt="Фото: ${escapeHTML(MEAL_TYPES[meal.type] || "Приём пищи")}">`
-      : "";
-    return `<article class="meal-card">
-      <div class="meal-head">
-        ${photo}
-        <div class="meal-head-main">
-          <strong>${escapeHTML(MEAL_TYPES[meal.type] || "Приём пищи")}</strong>
-          <span class="meal-kcal">${nutriRound(total.cal)} ккал</span>
-        </div>
-        <button type="button" class="mini-action delete-action" data-meal-delete="${escapeHTML(meal.id)}" aria-label="Удалить приём">
-          <svg class="icon"><use href="#i-trash"></use></svg>
-        </button>
-      </div>
-      <ul class="meal-items">${items}</ul>
-      <div class="meal-macros">
-        <span>Б ${nutriOne(total.pro)}</span>
-        <span>Ж ${nutriOne(total.fat)}</span>
-        <span>У ${nutriOne(total.carb)}</span>
-      </div>
-    </article>`;
-  }).join("");
-
-  if (empty) empty.classList.toggle("hidden", meals.length > 0);
-  list.classList.toggle("hidden", meals.length === 0);
-}
-
-function nutriRender() {
-  nutriRenderDashboard();
-  nutriRenderMeals();
-}
-
-function nutriSetDate(date) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
-  nutriDate = date;
-  const input = $("nutriDate");
-  if (input) input.value = date;
-  nutriRender();
-}
-
-/* --- Модалка приёма пищи --- */
-function nutriFillFoodCats() {
-  const select = $("foodCat");
-  if (!select) return;
-  select.innerHTML = `<option value="all">Все категории</option>` +
-    Object.entries(FOOD_CATS).map(([key, label]) =>
-      `<option value="${key}">${escapeHTML(label)}</option>`).join("");
-}
-
-function nutriRenderFoodResults() {
-  const box = $("foodResults");
-  if (!box) return;
-  const query = ($("foodSearch")?.value || "").trim().toLocaleLowerCase("ru");
-  const cat = $("foodCat")?.value || "all";
-
-  const matches = nutriAllFoods().filter(food => {
-    const okCat = cat === "all" || food.cat === cat;
-    const okQuery = !query ||
-      food.name.toLocaleLowerCase("ru").includes(query) ||
-      nutriCatLabel(food.cat).toLocaleLowerCase("ru").includes(query);
-    return okCat && okQuery;
-  }).slice(0, 50);
-
-  if (!matches.length) {
-    box.innerHTML = `<div class="food-empty">Ничего не найдено. Добавь свой продукт ниже.</div>`;
-    return;
-  }
-  box.innerHTML = matches.map(food =>
-    `<button type="button" class="food-row" data-food-add="${escapeHTML(food.id)}">
-      <span class="food-row-main">
-        <strong>${escapeHTML(food.name)}</strong>
-        <small>${escapeHTML(nutriCatLabel(food.cat))} · ${food.cal} ккал / 100 г</small>
-      </span>
-      <span class="food-row-add"><svg class="icon"><use href="#i-plus"></use></svg></span>
-    </button>`
-  ).join("");
-}
-
-function nutriRenderDraft() {
-  const list = $("draftList");
-  if (!list) return;
-  if (!nutriDraft.length) {
-    list.innerHTML = `<div class="draft-empty">Выбери продукты из списка выше.</div>`;
-  } else {
-    list.innerHTML = nutriDraft.map(item =>
-      `<div class="draft-row" data-draft-row="${escapeHTML(item.id)}">
-        <span class="draft-name">${escapeHTML(item.name)}</span>
-        <span class="draft-grams">
-          <input type="number" min="1" step="1" inputmode="numeric" value="${nutriRound(item.grams)}" data-draft-grams="${escapeHTML(item.id)}" aria-label="Граммы: ${escapeHTML(item.name)}">
-          <span>г</span>
-        </span>
-        <span class="draft-kcal" data-draft-kcal>${nutriRound(nutriItemMacros(item).cal)} ккал</span>
-        <button type="button" class="mini-action delete-action" data-draft-remove="${escapeHTML(item.id)}" aria-label="Убрать продукт">
-          <svg class="icon"><use href="#i-x"></use></svg>
-        </button>
-      </div>`
-    ).join("");
-  }
-  nutriUpdatePreview();
-}
-
-function nutriUpdatePreview() {
-  const preview = $("draftPreview");
-  if (!preview) return;
-  const total = nutriSumItems(nutriDraft);
-  preview.textContent = `${nutriRound(total.cal)} ккал · Б ${nutriOne(total.pro)} · Ж ${nutriOne(total.fat)} · У ${nutriOne(total.carb)}`;
-}
-
-function nutriAddFood(id) {
-  const food = nutriFindFood(id);
-  if (!food) return;
-  nutriDraft.push({
-    id: createId(),
-    foodId: food.id,
-    name: food.name,
-    grams: 100,
-    cal: food.cal, pro: food.pro, fat: food.fat, carb: food.carb
-  });
-  nutriRenderDraft();
-}
-
-function nutriOpenMeal() {
-  const modal = $("mealModal");
-  if goalsRaw = nutriLoadJSON(NUTRI_GOALS_KEY, null);
-  const goals = {
-    cal: nutriNum(goalsRaw?.cal) || NUTRI_DEFAULT_GOALS.cal
-  };
-  const mealsRaw = nutriLoadJSON(NUTRI_MEALS_KEY, []);
-  const meals = Array.isArray(mealsRaw) ? mealsRaw : [];
-  const total = { cal: 0, pro: 0, fat: 0, carb: 0 };
-  meals.filter(m => m && m.date === todayISO() && Array.isArray(m.items)).forEach(meal => {
-    const m = nutriSumItems(meal.items);
-    total.cal += m.cal; total.pro += m.pro; total.fat += m.fat; total.carb += m.carb;
-  });
-  const setText = (id, value) => { const el = $(id); if (el) el.textContent = value; };
-  setText("nsCal", nutriRound(total.cal));
-  setText("nsGoal", goals.cal);
-  setText("nsP", nutriRound(total.pro));
-  setText("nsF", nutriRound(total.fat));
-  setText("nsC", nutriRound(total.carb));
-  nutriSetRing("nsRing", total.cal, goals.cal);
-}
-
-function initNutrition() {
-  nutriRenderSummary();
-
-  if (!$("nutriDate")) return; // не страница питания — дальше не идём
-
-  nutriLoadState();
-  const dateInput = $("nutriDate");
-  dateInput.value = nutriDate;
-  nutriRender();
-
-  dateInput.addEventListener("change", event => {
-    if (event.target.value) nutriSetDate(event.target.value);
-  });
-  $("nutriPrevDay")?.addEventListener("click", () => {
-    const d = new Date(`${nutriDate}T12:00:00`); d.setDate(d.getDate() - 1); nutriSetDate(dateISO(d));
-  });
-  $("nutriNextDay")?.addEventListener("click", () => {
-    const d = new Date(`${nutriDate}T12:00:00`); d.setDate(d.getDate() + 1); nutriSetDate(dateISO(d));
-  });
-
-  $("nutriAddMeal")?.addEventListener("click", nutriOpenMeal);
-  $("mealClose")?.addEventListener("click", nutriCloseMeal);
-  $("mealCancel")?.addEventListener("click", nutriCloseMeal);
-  $("mealModal")?.addEventListener("click", event => {
-    if (event.target === $("mealModal")) nutriCloseMeal();
-  });
-
-  $("foodSearch")?.addEventListener("input", nutriRenderFoodResults);
-  $("foodSearch")?.addEventListener("keydown", event => {
-    if (event.key === "Enter") event.preventDefault();
-  });
-  $("foodCat")?.addEventListener("change", nutriRenderFoodResults);
-
-  $("foodResults")?.addEventListener("click", event => {
-    const button = event.target.closest("[data-food-add]");
-    if (button) nutriAddFood(button.dataset.foodAdd);
-  });
-
-  $("draftList")?.addEventListener("input", event => {
-    const input = event.target.closest("[data-draft-grams]");
-    if (!input) return;
-    const item = nutriDraft.find(d => d.id === input.dataset.draftGrams);
-    if (!item) return;
-    item.grams = Math.max(0, Number(input.value) || 0);
-    const row = input.closest("[data-draft-row]");
-    const kcal = row?.querySelector("[data-draft-kcal]");
-    if (kcal) kcal.textContent = `${nutriRound(nutriItemMacros(item).cal)} ккал`;
-    nutriUpdatePreview();
-  });
-  $("draftList")?.addEventListener("click", event => {
-    const button = event.target.closest("[data-draft-remove]");
-    if (!button) return;
-    nutriDraft = nutriDraft.filter(d => d.id !== button.dataset.draftRemove);
-    nutriRenderDraft();
-  });
-
-  $("customToggle")?.addEventListener("click", () => $("customForm")?.classList.toggle("hidden"));
-  $("cfAdd")?.addEventListener("click", () => {
-    const name = $("cfName").value.trim();
-    const cal = nutriNum($("cfCal").value);
-    const pro = nutriNum($("cfPro").value);
-    const fat = nutriNum($("cfFat").value);
-    const carb = nutriNum($("cfCarb").value);
-    if (name.length < 2) { showToast("Введите название продукта", "error"); return; }
-    if (cal <= 0) { showToast("Укажите калорийность на 100 г", "error"); return; }
-    const food = { id: "custom-" + createId(), name, cat: "custom", cal, pro, fat, carb };
-    nutriCustom.push(food);
-    if (!nutriSaveCustom()) { nutriCustom.pop(); return; }
-    nutriAddFood(food.id);
-    $("cfName").value = ""; $("cfCal").value = ""; $("cfPro").value = ""; $("cfFat").value = ""; $("cfCarb").value = "";
-    $("customForm")?.classList.add("hidden");
-    showToast("Продукт добавлен в базу");
-  });
-
-  $("mealPhoto")?.addEventListener("change", async event => {
-    const file = event.target.files && event.target.files[0];
-    event.target.value = "";
-    if (!file) return;
-    try {
-      nutriPhoto = await nutriCompressPhoto(file);
-      const img = $("photoImg");
-      if (img) img.src = nutriPhoto;
-      $("photoPreview")?.classList.remove("hidden");
-    } catch (error) {
-      console.warn("DayFlow nutrition: фото не обработано.", error);
-      showToast("Не удалось обработать фото", "error");
-    }
-  });
-  $("photoRemove")?.addEventListener("click", () => {
-    nutriPhoto = "";
-    $("photoPreview")?.classList.add("hidden");
-  });
-
-  $("mealForm")?.addEventListener("submit", event => {
-    event.preventDefault();
-    if (!nutriDraft.length) { showToast("Добавьте хотя бы один продукт", "error"); return; }
-    const items = nutriDraft
-      .filter(d => Number(d.grams) > 0)
-      .map(d => ({
-        foodId: d.foodId, name: d.name, grams: Number(d.grams),
-        cal: d.cal, pro: d.pro, fat: d.fat, carb: d.carb
-      }));
-    if (!items.length) { showToast("Укажите граммы больше нуля", "error"); return; }
-
-    const meal = {
-      id: createId(),
-      date: nutriDate,
-      type: $("mealType").value,
-      items,
-      photo: nutriPhoto,
-      createdAt: Date.now()
-    };
-    nutriMeals.push(meal);
-    if (!nutriSaveMeals()) { nutriMeals.pop(); return; }
-    nutriCloseMeal();
-    nutriRender();
-    showToast("Приём пищи добавлен");
-  });
-
-  $("mealList")?.addEventListener("click", event => {
-    const button = event.target.closest("[data-meal-delete]");
-    if (!button) return;
-    const id = button.dataset.mealDelete;
-    if (!window.confirm("Удалить приём пищи?")) return;
-    const previous = nutriMeals;
-    nutriMeals = nutriMeals.filter(m => m.id !== id);
-    if (!nutriSaveMeals()) { nutriMeals = previous; return; }
-    nutriRender();
-    showToast("Приём пищи удалён");
-  });
-
-  $("nutriGoalsBtn")?.addEventListener("click", nutriOpenGoals);
-  $("goalsClose")?.addEventListener("click", nutriCloseGoals);
-  $("goalsCancel")?.addEventListener("click", nutriCloseGoals);
-  $("goalsModal")?.addEventListener("click", event => {
-    if (event.target === $("goalsModal")) nutriCloseGoals();
-  });
-  $("goalsForm")?.addEventListener("submit", event => {
-    event.preventDefault();
-    const cal = nutriNum($("goalCal").value);
-    const pro = nutriNum($("goalPro").value);
-    const fat = nutriNum($("goalFat").value);
-    const carb = nutriNum($("goalCarb").value);
-    if (cal <= 0 || pro <= 0 || fat <= 0 || carb <= 0) {
-      showToast("Все нормы должны быть больше нуля", "error");
-      return;
-    }
-    const previous = { ...nutriGoals };
-    nutriGoals = { cal, pro, fat, carb };
-    if (!nutriSaveGoals()) { nutriGoals = previous; return; }
-    nutriCloseGoals();
-    nutriRender();
-    showToast("Нормы сохранены");
-  });
-
-  document.addEventListener("keydown", event => {
-    if (event.key === "Escape") { nutriCloseMeal(); nutriCloseGoals(); }
-  });
-}
-
-document.addEventListener("DOMContentLoaded", initNutrition);
