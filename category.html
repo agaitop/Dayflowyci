@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Категории — DayFlow</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -20,12 +20,33 @@
         <a class="nav-link" href="index.html?category=study"><span>⌘</span> Учёба</a>
         <a class="nav-link" href="index.html?category=sport"><span>⚡</span> Спорт</a>
       </nav>
-      <div class="sidebar-bottom"><div class="tip-card"><span>✦</span><strong>Всё важное<br>в одном месте.</strong><small>Планируй без суеты.</small></div><button class="nav-link" id="themeToggle"><span id="themeIcon">☾</span> Тёмная тема</button></div>
+      <div class="sidebar-bottom">
+        <div class="tip-card"><span>✦</span><strong>Всё важное<br>в одном месте.</strong><small>Планируй без суеты.</small></div>
+        <button class="nav-link" id="themeToggle"><span id="themeIcon">☾</span> Тёмная тема</button>
+      </div>
     </aside>
     <button class="nav-backdrop" id="navBackdrop" aria-label="Закрыть меню"></button>
+    
     <main class="main-content">
-      <header class="topbar"><button class="mobile-menu icon-button" id="menuToggle" aria-label="Открыть меню">☰</button><div class="breadcrumb">Рабочее пространство <span>/</span> Категории</div><div class="top-actions"><span class="today-label" id="headerDate"></span><button class="icon-button" id="themeToggleTop">◐</button><div class="avatar">Я</div></div></header>
-      <section class="welcome-row"><div><p class="eyebrow">ТВОИ НАПРАВЛЕНИЯ</p><h1>Категории <span>дел.</span></h1><p class="muted">Разделяй задачи по сферам жизни, чтобы легко находить нужное.</p></div><a class="primary-button button-link" href="index.html">Перейти к задачам →</a></section>
+      <header class="topbar">
+        <button class="mobile-menu icon-button" id="menuToggle" aria-label="Открыть меню">☰</button>
+        <div class="breadcrumb">Рабочее пространство <span>/</span> Категории</div>
+        <div class="top-actions">
+          <span class="today-label" id="headerDate"></span>
+          <button class="icon-button" id="themeToggleTop">◐</button>
+          <div class="avatar">Я</div>
+        </div>
+      </header>
+      
+      <section class="welcome-row">
+        <div>
+          <p class="eyebrow">ТВОИ НАПРАВЛЕНИЯ</p>
+          <h1>Категории <span>дел.</span></h1>
+          <p class="muted">Разделяй задачи по сферам жизни, чтобы легко находить нужное.</p>
+        </div>
+        <a class="primary-button button-link" href="index.html">Перейти к задачам →</a>
+      </section>
+      
       <section class="category-grid-page" id="categoryGrid">
         <a class="category-large category-card-link study-card" href="index.html?category=study"><div class="category-icon study">⌘</div><h2>Учёба</h2><p>Python, SQLite, Stepik, домашние задания и новые знания.</p><strong id="count-study">0 задач</strong></a>
         <a class="category-large category-card-link sport-card" href="index.html?category=sport"><div class="category-icon sport">⚡</div><h2>Спорт</h2><p>Бег, велосипед, прогулки и тренировки в комфортном темпе.</p><strong id="count-sport">0 задач</strong></a>
