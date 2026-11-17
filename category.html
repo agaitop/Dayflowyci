@@ -2,66 +2,138 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#f3f5f8">
   <title>Категории — DayFlow</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+    <symbol id="i-logo" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M8 12h8"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></symbol>
+    <symbol id="i-case" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></symbol>
+    <symbol id="i-smile" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></symbol>
+    <symbol id="i-right" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></symbol>
+    <symbol id="i-check-circle" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+  </svg>
+
   <div class="app-shell">
     <aside class="sidebar" id="sidebar">
-      <a class="brand" href="index.html"><span class="brand-mark">D</span><span>DayFlow<small>PERSONAL PLANNER</small></span></a>
-      <div class="side-label">МЕНЮ</div>
-      <nav class="nav">
-        <a class="nav-link" href="index.html"><span>▦</span> Главная</a>
-        <a class="nav-link active" href="category.html"><span>▤</span> Категории</a>
-        <a class="nav-link" href="index.html"><span>✓</span> Все задачи</a>
-        <a class="nav-link" href="index.html?category=study"><span>⌘</span> Учёба</a>
-        <a class="nav-link" href="index.html?category=sport"><span>⚡</span> Спорт</a>
+      <a class="brand" href="index.html">
+        <span class="brand-mark"><svg class="icon"><use href="#i-logo"></use></svg></span>
+        <span class="brand-text">DayFlow<small>личный планировщик</small></span>
+      </a>
+
+      <nav class="nav" aria-label="Основная навигация">
+        <a class="nav-link" href="index.html"><svg class="icon"><use href="#i-grid"></use></svg>Главная</a>
+        <a class="nav-link active" href="category.html"><svg class="icon"><use href="#i-list"></use></svg>Категории</a>
+        <div class="nav-divider"></div>
+        <a class="nav-link" href="index.html?category=study"><svg class="icon"><use href="#i-book"></use></svg>Учёба</a>
+        <a class="nav-link" href="index.html?category=sport"><svg class="icon"><use href="#i-bolt"></use></svg>Спорт</a>
+        <a class="nav-link" href="index.html?category=work"><svg class="icon"><use href="#i-case"></use></svg>Работа</a>
+        <a class="nav-link" href="index.html?category=rest"><svg class="icon"><use href="#i-smile"></use></svg>Отдых</a>
+        <a class="nav-link" href="index.html?category=personal"><svg class="icon"><use href="#i-heart"></use></svg>Личное</a>
+        <a class="nav-link" href="index.html?category=ideas"><svg class="icon"><use href="#i-star"></use></svg>Идеи</a>
       </nav>
+
       <div class="sidebar-bottom">
-        <div class="tip-card"><span>✦</span><strong>Всё важное<br>в одном месте.</strong><small>Планируй без суеты.</small></div>
-        <button class="nav-link" id="themeToggle"><span id="themeIcon">☾</span> Тёмная тема</button>
+        <div class="tip-card">
+          <strong>Всё важное рядом</strong>
+          <small>Каждая сфера жизни — на своём месте.</small>
+        </div>
+        <button type="button" class="nav-link" id="themeToggle">
+          <svg class="icon icon-moon"><use href="#i-moon"></use></svg>
+          <svg class="icon icon-sun hidden"><use href="#i-sun"></use></svg>
+          <span id="themeLabel">Тёмная тема</span>
+        </button>
       </div>
     </aside>
-    <button class="nav-backdrop" id="navBackdrop" aria-label="Закрыть меню"></button>
-    
+
+    <button type="button" class="nav-backdrop" id="navBackdrop" aria-label="Закрыть меню"></button>
+
     <main class="main-content">
       <header class="topbar">
-        <button class="mobile-menu icon-button" id="menuToggle" aria-label="Открыть меню">☰</button>
-        <div class="breadcrumb">Рабочее пространство <span>/</span> Категории</div>
+        <button type="button" class="mobile-menu icon-button" id="menuToggle" aria-label="Открыть меню" aria-expanded="false">
+          <svg class="icon"><use href="#i-menu"></use></svg>
+        </button>
+        <div class="breadcrumb">Категории</div>
         <div class="top-actions">
           <span class="today-label" id="headerDate"></span>
-          <button class="icon-button" id="themeToggleTop">◐</button>
-          <div class="avatar">Я</div>
+          <button type="button" class="icon-button" id="themeToggleTop" aria-label="Переключить тему">
+            <svg class="icon icon-moon"><use href="#i-moon"></use></svg>
+            <svg class="icon icon-sun hidden"><use href="#i-sun"></use></svg>
+          </button>
+          <div class="avatar">И</div>
         </div>
       </header>
-      
+
       <section class="welcome-row">
         <div>
-          <p class="eyebrow">ТВОИ НАПРАВЛЕНИЯ</p>
-          <h1>Категории <span>дел.</span></h1>
-          <p class="muted">Разделяй задачи по сферам жизни, чтобы легко находить нужное.</p>
+          <p class="eyebrow">Организация</p>
+          <h1>Категории</h1>
+          <p class="muted">Структурируй задачи по сферам жизни.</p>
         </div>
-        <a class="primary-button button-link" href="index.html">Перейти к задачам →</a>
+        <a class="primary-button button-link" href="index.html">К задачам<svg class="icon"><use href="#i-right"></use></svg></a>
       </section>
-      
+
       <section class="category-grid-page" id="categoryGrid">
-        <a class="category-large category-card-link study-card" href="index.html?category=study"><div class="category-icon study">⌘</div><h2>Учёба</h2><p>Python, SQLite, Stepik, домашние задания и новые знания.</p><strong id="count-study">0 задач</strong></a>
-        <a class="category-large category-card-link sport-card" href="index.html?category=sport"><div class="category-icon sport">⚡</div><h2>Спорт</h2><p>Бег, велосипед, прогулки и тренировки в комфортном темпе.</p><strong id="count-sport">0 задач</strong></a>
-        <a class="category-large category-card-link work-card" href="index.html?category=work"><div class="category-icon work">▣</div><h2>Работа</h2><p>Проекты, рабочие задачи и важные поручения.</p><strong id="count-work">0 задач</strong></a>
-        <a class="category-large category-card-link rest-card" href="index.html?category=rest"><div class="category-icon rest">☕</div><h2>Отдых</h2><p>Фильмы, игры, свободное время и перезагрузка.</p><strong id="count-rest">0 задач</strong></a>
-        <a class="category-large category-card-link personal-card" href="index.html?category=personal"><div class="category-icon personal">♡</div><h2>Личное</h2><p>Покупки, встречи, бытовые и личные дела.</p><strong id="count-personal">0 задач</strong></a>
-        <a class="category-large category-card-link ideas-card" href="index.html?category=ideas"><div class="category-icon ideas">✦</div><h2>Идеи</h2><p>Мысли, планы и задумки, к которым хочется вернуться.</p><strong id="count-ideas">0 задач</strong></a>
+        <a class="category-large" href="index.html?category=study">
+          <span class="category-icon lg cat-study"><svg class="icon"><use href="#i-book"></use></svg></span>
+          <h2>Учёба</h2>
+          <p>Курсы, домашние задания и новые знания.</p>
+          <strong id="count-study">0 задач</strong>
+        </a>
+        <a class="category-large" href="index.html?category=sport">
+          <span class="category-icon lg cat-sport"><svg class="icon"><use href="#i-bolt"></use></svg></span>
+          <h2>Спорт</h2>
+          <p>Тренировки, активность и здоровье.</p>
+          <strong id="count-sport">0 задач</strong>
+        </a>
+        <a class="category-large" href="index.html?category=work">
+          <span class="category-icon lg cat-work"><svg class="icon"><use href="#i-case"></use></svg></span>
+          <h2>Работа</h2>
+          <p>Проекты, дедлайны и важные поручения.</p>
+          <strong id="count-work">0 задач</strong>
+        </a>
+        <a class="category-large" href="index.html?category=rest">
+          <span class="category-icon lg cat-rest"><svg class="icon"><use href="#i-smile"></use></svg></span>
+          <h2>Отдых</h2>
+          <p>Восстановление и свободное время.</p>
+          <strong id="count-rest">0 задач</strong>
+        </a>
+        <a class="category-large" href="index.html?category=personal">
+          <span class="category-icon lg cat-personal"><svg class="icon"><use href="#i-heart"></use></svg></span>
+          <h2>Личное</h2>
+          <p>Быт, встречи и личные дела.</p>
+          <strong id="count-personal">0 задач</strong>
+        </a>
+        <a class="category-large" href="index.html?category=ideas">
+          <span class="category-icon lg cat-ideas"><svg class="icon"><use href="#i-star"></use></svg></span>
+          <h2>Идеи</h2>
+          <p>Мысли и планы, к которым хочется вернуться.</p>
+          <strong id="count-ideas">0 задач</strong>
+        </a>
       </section>
-      <footer>DayFlow <span>·</span> Твой день под контролем</footer>
+
+      <footer>DayFlow <span>·</span> личный планировщик</footer>
     </main>
   </div>
 
-  <!-- Контейнер для всплывающих уведомлений -->
-  <div id="toast-container" class="toast-container"></div>
-  
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
   <script src="script.js"></script>
 </body>
 </html>
