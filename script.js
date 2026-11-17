@@ -269,7 +269,23 @@ function init(){
   });
   $("themeToggle")?.addEventListener("click",toggleTheme);
   $("themeToggleTop")?.addEventListener("click",toggleTheme);
-  $("menuToggle")?.addEventListener("click",()=>$("sidebar")?.classList.toggle("open"));
+  const sidebar=$("sidebar");
+  const backdrop=$("navBackdrop");
+  const closeMenu=()=>{
+    sidebar?.classList.remove("open");
+    backdrop?.classList.remove("visible");
+    $("menuToggle")?.setAttribute("aria-expanded","false");
+  };
+  $("menuToggle")?.addEventListener("click",()=>{
+    const isOpen=sidebar?.classList.toggle("open");
+    backdrop?.classList.toggle("visible",!!isOpen);
+    $("menuToggle")?.setAttribute("aria-expanded",String(!!isOpen));
+  });
+  backdrop?.addEventListener("click",closeMenu);
+  sidebar?.querySelectorAll("a,button").forEach(item=>item.addEventListener("click",()=>{
+    if(window.matchMedia("(max-width: 700px)").matches) closeMenu();
+  }));
+  document.addEventListener("keydown",e=>{if(e.key==="Escape")closeMenu();});
   const note=$("dailyNote");
   if(note){
     updateNoteForDate();
