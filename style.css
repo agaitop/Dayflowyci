@@ -14,7 +14,7 @@ body {
   background: var(--bg); color: var(--text);
   font-family: 'Inter', Arial, sans-serif; font-size: 13px;
   transition: background .2s, color .2s;
-  overflow-x: hidden; /* КРИТИЧЕСКИ ВАЖНО ДЛЯ МОБИЛЬНЫХ */
+  overflow-x: hidden;
   min-height: 100vh;
 }
 button, input, textarea, select { font: inherit; }
@@ -212,6 +212,59 @@ body.dark .category-large strong { color: #9bb6d8; }
 footer { padding: 28px 0; color: var(--muted); font-size: 10px; text-align: center; }
 footer span { padding: 0 5px; }
 
+/* === УВЕДОМЛЕНИЯ (TOASTS) === */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+.toast {
+  pointer-events: auto;
+  background: var(--surface);
+  color: var(--text);
+  padding: 12px 18px;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  border-left: 4px solid var(--primary);
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: toastSlideIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  max-width: 320px;
+}
+.toast.success { border-left-color: #20a36a; }
+.toast.error { border-left-color: #df5555; }
+.toast.info { border-left-color: #4388e8; }
+
+@keyframes toastSlideIn {
+  from { transform: translateX(120%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes toastFadeOut {
+  to { transform: translateX(120%); opacity: 0; }
+}
+
+@media (max-width: 768px) {
+  .toast-container {
+    bottom: 16px;
+    left: 16px;
+    right: 16px;
+    align-items: center;
+  }
+  .toast {
+    width: 100%;
+    max-width: none;
+    justify-content: center;
+  }
+}
+
 /* =========================================
    АДАПТИВНОСТЬ (МОБИЛЬНАЯ ВЕРСИЯ)
    ========================================= */
@@ -222,7 +275,6 @@ footer span { padding: 0 5px; }
 }
 
 @media (max-width: 768px) {
-  /* Скрываем боковую панель и показываем кнопку меню */
   .sidebar { transform: translateX(-100%); width: 85vw; max-width: 320px; z-index: 100; box-shadow: 12px 0 35px rgba(13,28,48,.12); }
   .sidebar.open { transform: translateX(0); }
   .nav-backdrop.visible { display: block; }
@@ -277,7 +329,7 @@ footer span { padding: 0 5px; }
   .form-row { grid-template-columns: 1fr; gap: 0; }
   .modal-actions { display: grid; grid-template-columns: 1fr 1.4fr; gap: 8px; }
   .modal-actions button { min-height: 44px; font-size: 11px; }
-  .modal input, .modal textarea, .modal select { font-size: 16px; padding: 11px; } /* 16px предотвращает зум на iOS */
+  .modal input, .modal textarea, .modal select { font-size: 16px; padding: 11px; }
 }
 
 @media (max-width: 380px) {
@@ -286,58 +338,4 @@ footer span { padding: 0 5px; }
   .stat-card { padding: 10px 8px; }
   .stat-card span { font-size: 8px; }
   .panel { padding: 12px; }
-}
-
-/* === УВЕДОМЛЕНИЯ (TOASTS) === */
-.toast-container {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  z-index: 9999;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  pointer-events: none; /* Чтобы клики проходили сквозь пустое место */
-}
-.toast {
-  pointer-events: auto;
-  background: var(--surface);
-  color: var(--text);
-  padding: 12px 18px;
-  border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-  border-left: 4px solid var(--primary);
-  font-size: 13px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  animation: toastSlideIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-  max-width: 320px;
-}
-.toast.success { border-left-color: #20a36a; }
-.toast.error { border-left-color: #df5555; }
-.toast.info { border-left-color: #4388e8; }
-
-@keyframes toastSlideIn {
-  from { transform: translateX(120%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
-}
-@keyframes toastFadeOut {
-  to { transform: translateX(120%); opacity: 0; }
-}
-
-/* Адаптив для мобильных: уведомления по центру снизу */
-@media (max-width: 768px) {
-  .toast-container {
-    bottom: 16px;
-    left: 16px;
-    right: 16px;
-    align-items: center;
-  }
-  .toast {
-    width: 100%;
-    max-width: none;
-    justify-content: center;
-  }
 }
