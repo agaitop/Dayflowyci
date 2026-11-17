@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Категории — DayFlow</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="index.html"><span class="brand-mark">D</span><span>DayFlow<small>PERSONAL PLANNER</small></span></a>
+      <div class="side-label">МЕНЮ</div>
+      <nav class="nav">
+        <a class="nav-link" href="index.html"><span>▦</span> Главная</a>
+        <a class="nav-link active" href="category.html"><span>▤</span> Категории</a>
+        <a class="nav-link" href="index.html"><span>✓</span> Все задачи</a>
+        <a class="nav-link" href="index.html?category=study"><span>⌘</span> Учёба</a>
+        <a class="nav-link" href="index.html?category=sport"><span>⚡</span> Спорт</a>
+      </nav>
+      <div class="sidebar-bottom"><div class="tip-card"><span>✦</span><strong>Всё важное<br>в одном месте.</strong><small>Планируй без суеты.</small></div><button class="nav-link" id="themeToggle"><span id="themeIcon">☾</span> Тёмная тема</button></div>
+    </aside>
+    <main class="main-content">
+      <header class="topbar"><div class="breadcrumb">Рабочее пространство <span>/</span> Категории</div><div class="top-actions"><span class="today-label" id="headerDate"></span><button class="icon-button" id="themeToggleTop">◐</button><div class="avatar">Я</div></div></header>
+      <section class="welcome-row"><div><p class="eyebrow">ТВОИ НАПРАВЛЕНИЯ</p><h1>Категории <span>дел.</span></h1><p class="muted">Разделяй задачи по сферам жизни, чтобы легко находить нужное.</p></div><a class="primary-button button-link" href="index.html">Перейти к задачам →</a></section>
+      <section class="category-grid-page" id="categoryGrid">
+        <a class="category-large category-card-link study-card" href="index.html?category=study"><div class="category-icon study">⌘</div><h2>Учёба</h2><p>Python, SQLite, Stepik, домашние задания и новые знания.</p><strong id="count-study">0 задач</strong></a>
+        <a class="category-large category-card-link sport-card" href="index.html?category=sport"><div class="category-icon sport">⚡</div><h2>Спорт</h2><p>Бег, велосипед, прогулки и тренировки в комфортном темпе.</p><strong id="count-sport">0 задач</strong></a>
+        <a class="category-large category-card-link work-card" href="index.html?category=work"><div class="category-icon work">▣</div><h2>Работа</h2><p>Проекты, рабочие задачи и важные поручения.</p><strong id="count-work">0 задач</strong></a>
+        <a class="category-large category-card-link rest-card" href="index.html?category=rest"><div class="category-icon rest">☕</div><h2>Отдых</h2><p>Фильмы, игры, свободное время и перезагрузка.</p><strong id="count-rest">0 задач</strong></a>
+        <a class="category-large category-card-link personal-card" href="index.html?category=personal"><div class="category-icon personal">♡</div><h2>Личное</h2><p>Покупки, встречи, бытовые и личные дела.</p><strong id="count-personal">0 задач</strong></a>
+        <a class="category-large category-card-link ideas-card" href="index.html?category=ideas"><div class="category-icon ideas">✦</div><h2>Идеи</h2><p>Мысли, планы и задумки, к которым хочется вернуться.</p><strong id="count-ideas">0 задач</strong></a>
+      </section>
+      <footer>DayFlow <span>·</span> Твой день под контролем</footer>
+    </main>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
