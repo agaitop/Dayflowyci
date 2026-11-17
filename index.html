@@ -27,6 +27,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
           Категории
         </a>
+        <a class="nav-link" href="nutrition.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/></svg>
+          Питание
+        </a>
         <button type="button" class="nav-link" data-filter="all">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
           Все задачи
@@ -191,6 +195,21 @@
             <textarea id="dailyNote" placeholder="Ваши мысли на сегодня..."></textarea>
             <small class="save-hint" id="noteSaved">Сохранено</small>
           </div>
+
+          <a class="panel nutrition-summary" id="nutritionSummary" href="nutrition.html">
+            <div class="ns-ring">
+              <svg viewBox="0 0 48 48" aria-hidden="true">
+                <circle class="ring-bg" cx="24" cy="24" r="20"></circle>
+                <circle class="ring-fill ring-cal" id="nsRing" cx="24" cy="24" r="20"></circle>
+              </svg>
+            </div>
+            <div class="ns-info">
+              <span class="ns-label">Питание сегодня</span>
+              <strong><span id="nsCal">0</span> / <span id="nsGoal">2200</span> ккал</strong>
+              <small>Б <span id="nsP">0</span> · Ж <span id="nsF">0</span> · У <span id="nsC">0</span></small>
+            </div>
+            <svg class="ns-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </a>
         </aside>
       </section>
       
