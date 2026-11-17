@@ -3,10 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#f5f7fb">
-  <title>DayFlow — мой планировщик</title>
+  <title>Категории — DayFlow</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -16,119 +14,28 @@
       <a class="brand" href="index.html"><span class="brand-mark">D</span><span>DayFlow<small>PERSONAL PLANNER</small></span></a>
       <div class="side-label">МЕНЮ</div>
       <nav class="nav">
-        <a class="nav-link active" href="index.html"><span>▦</span> Главная</a>
-        <a class="nav-link" href="category.html"><span>▤</span> Категории</a>
-        <button class="nav-link" data-filter="all"><span>✓</span> Все задачи</button>
-        <button class="nav-link" data-filter="study"><span>⌘</span> Учёба</button>
-        <button class="nav-link" data-filter="sport"><span>⚡</span> Спорт</button>
-        <button class="nav-link" data-filter="work"><span>▣</span> Работа</button>
-        <button class="nav-link" data-filter="rest"><span>☕</span> Отдых</button>
-        <button class="nav-link" data-filter="personal"><span>♡</span> Личное</button>
-        <button class="nav-link" data-filter="ideas"><span>✦</span> Идеи</button>
+        <a class="nav-link" href="index.html"><span>▦</span> Главная</a>
+        <a class="nav-link active" href="category.html"><span>▤</span> Категории</a>
+        <a class="nav-link" href="index.html"><span>✓</span> Все задачи</a>
+        <a class="nav-link" href="index.html?category=study"><span>⌘</span> Учёба</a>
+        <a class="nav-link" href="index.html?category=sport"><span>⚡</span> Спорт</a>
       </nav>
-      <div class="sidebar-bottom">
-        <div class="tip-card"><span>✦</span><strong>Маленькие шаги —<br>большой результат.</strong><small>Планируй в своём темпе.</small></div>
-        <button class="nav-link" id="themeToggle"><span id="themeIcon">☾</span> Тёмная тема</button>
-      </div>
+      <div class="sidebar-bottom"><div class="tip-card"><span>✦</span><strong>Всё важное<br>в одном месте.</strong><small>Планируй без суеты.</small></div><button class="nav-link" id="themeToggle"><span id="themeIcon">☾</span> Тёмная тема</button></div>
     </aside>
     <button class="nav-backdrop" id="navBackdrop" aria-label="Закрыть меню"></button>
-
     <main class="main-content">
-      <header class="topbar">
-        <button class="mobile-menu icon-button" id="menuToggle" aria-label="Открыть меню">☰</button>
-        <div class="breadcrumb">Рабочее пространство <span>/</span> Главная</div>
-        <div class="top-actions">
-          <span class="today-label" id="headerDate"></span>
-          <button class="icon-button" id="themeToggleTop" aria-label="Переключить тему">◐</button>
-          <div class="avatar">Я</div>
-        </div>
-      </header>
-
-      <section class="welcome-row">
-        <div>
-          <p class="eyebrow" id="fullDate">ТВОЙ ПЛАН НА СЕГОДНЯ</p>
-          <h1>Привет! Твой день начинается <span>здесь.</span> 👋</h1>
-          <p class="muted">Спокойно двигайся к своим целям — шаг за шагом.</p>
-        </div>
-        <button class="primary-button" id="addTaskTop">＋ Добавить задачу</button>
-      </section>
-
-      <section class="stats-grid">
-        <article class="stat-card"><div class="stat-icon purple">▤</div><div><span>Всего задач</span><strong id="totalCount">0</strong><small>В твоём плане</small></div></article>
-        <article class="stat-card"><div class="stat-icon green">✓</div><div><span>Выполнено</span><strong id="doneCount">0</strong><small>Отличная работа!</small></div></article>
-        <article class="stat-card"><div class="stat-icon blue">◷</div><div><span>В процессе</span><strong id="progressCount">0</strong><small>Ты уже начал</small></div></article>
-        <article class="stat-card"><div class="stat-icon orange">◎</div><div><span>Осталось</span><strong id="remainingCount">0</strong><small>Всё по силам</small></div></article>
-      </section>
-
-      <section class="content-grid">
-        <div class="panel tasks-panel">
-          <div class="panel-heading">
-            <div><h2>Мои задачи</h2><p class="muted">Твой список дел на выбранный день</p></div>
-            <div class="date-control"><button class="icon-button small" id="prevDay">‹</button><input type="date" id="selectedDate"><button class="icon-button small" id="nextDay">›</button></div>
-          </div>
-          <div class="progress-wrap"><div class="progress-info"><span>Прогресс дня</span><strong id="progressPercent">0%</strong></div><div class="progress-track"><div id="progressBar"></div></div></div>
-          <div class="week-strip" id="weekStrip" aria-label="Выбор дня недели"></div>
-          <div class="task-tools">
-            <label class="search-box"><span>⌕</span><input type="search" id="taskSearch" placeholder="Найти задачу..." aria-label="Поиск задач"></label>
-            <span class="task-tools-hint" id="taskCountHint">0 задач</span>
-          </div>
-          <div class="filter-row">
-            <button class="filter-chip selected" data-status="all">Все</button>
-            <button class="filter-chip" data-status="todo">Не начато</button>
-            <button class="filter-chip" data-status="doing">В процессе</button>
-            <button class="filter-chip" data-status="done">Выполнено</button>
-            <button class="filter-chip" data-status="cancelled">Отменено</button>
-          </div>
-          <div id="taskList" class="task-list"></div>
-          <div class="empty-state hidden" id="emptyState"><div>✦</div><h3>Пока задач нет</h3><p>Добавь первое дело и освободи голову от лишних мыслей.</p><button class="primary-button" id="emptyAdd">＋ Добавить задачу</button></div>
-        </div>
-
-        <aside class="right-column">
-          <div class="panel quick-panel">
-            <div class="panel-heading"><div><h2>Быстро добавить</h2><p class="muted">Выбери направление</p></div></div>
-            <div class="quick-categories">
-              <button class="quick-category" data-category="study"><span class="category-icon study">⌘</span><span>Учёба</span><b>＋</b></button>
-              <button class="quick-category" data-category="sport"><span class="category-icon sport">⚡</span><span>Спорт</span><b>＋</b></button>
-              <button class="quick-category" data-category="work"><span class="category-icon work">▣</span><span>Работа</span><b>＋</b></button>
-              <button class="quick-category" data-category="rest"><span class="category-icon rest">☕</span><span>Отдых</span><b>＋</b></button>
-              <button class="quick-category" data-category="personal"><span class="category-icon personal">♡</span><span>Личное</span><b>＋</b></button>
-              <button class="quick-category" data-category="ideas"><span class="category-icon ideas">✦</span><span>Идеи</span><b>＋</b></button>
-            </div>
-          </div>
-          <div class="quote-card"><div class="quote-mark">“</div><h3>Не обязательно делать всё сразу.</h3><p>Достаточно сделать следующий небольшой шаг.</p><span>ТВОЁ НАПОМИНАНИЕ НА СЕГОДНЯ</span></div>
-          <div class="panel mini-panel"><div class="panel-heading"><div><h2>Личный фокус</h2><p class="muted">Что важно сегодня?</p></div></div><textarea id="dailyNote" placeholder="Запиши главную мысль или цель дня..."></textarea><small class="save-hint" id="noteSaved">Заметка сохраняется автоматически</small></div>
-        </aside>
+      <header class="topbar"><button class="mobile-menu icon-button" id="menuToggle" aria-label="Открыть меню">☰</button><div class="breadcrumb">Рабочее пространство <span>/</span> Категории</div><div class="top-actions"><span class="today-label" id="headerDate"></span><button class="icon-button" id="themeToggleTop">◐</button><div class="avatar">Я</div></div></header>
+      <section class="welcome-row"><div><p class="eyebrow">ТВОИ НАПРАВЛЕНИЯ</p><h1>Категории <span>дел.</span></h1><p class="muted">Разделяй задачи по сферам жизни, чтобы легко находить нужное.</p></div><a class="primary-button button-link" href="index.html">Перейти к задачам →</a></section>
+      <section class="category-grid-page" id="categoryGrid">
+        <a class="category-large category-card-link study-card" href="index.html?category=study"><div class="category-icon study">⌘</div><h2>Учёба</h2><p>Python, SQLite, Stepik, домашние задания и новые знания.</p><strong id="count-study">0 задач</strong></a>
+        <a class="category-large category-card-link sport-card" href="index.html?category=sport"><div class="category-icon sport">⚡</div><h2>Спорт</h2><p>Бег, велосипед, прогулки и тренировки в комфортном темпе.</p><strong id="count-sport">0 задач</strong></a>
+        <a class="category-large category-card-link work-card" href="index.html?category=work"><div class="category-icon work">▣</div><h2>Работа</h2><p>Проекты, рабочие задачи и важные поручения.</p><strong id="count-work">0 задач</strong></a>
+        <a class="category-large category-card-link rest-card" href="index.html?category=rest"><div class="category-icon rest">☕</div><h2>Отдых</h2><p>Фильмы, игры, свободное время и перезагрузка.</p><strong id="count-rest">0 задач</strong></a>
+        <a class="category-large category-card-link personal-card" href="index.html?category=personal"><div class="category-icon personal">♡</div><h2>Личное</h2><p>Покупки, встречи, бытовые и личные дела.</p><strong id="count-personal">0 задач</strong></a>
+        <a class="category-large category-card-link ideas-card" href="index.html?category=ideas"><div class="category-icon ideas">✦</div><h2>Идеи</h2><p>Мысли, планы и задумки, к которым хочется вернуться.</p><strong id="count-ideas">0 задач</strong></a>
       </section>
       <footer>DayFlow <span>·</span> Твой день под контролем</footer>
     </main>
-  </div>
-
-  <div class="modal-backdrop hidden" id="taskModal">
-    <form class="modal" id="taskForm">
-      <div class="modal-heading"><div><p class="eyebrow">НОВАЯ ЗАПИСЬ</p><h2 id="modalTitle">Добавить задачу</h2></div><button type="button" class="icon-button" id="closeModal">×</button></div>
-      <input type="hidden" id="taskId">
-      <label>Название задачи<input id="taskTitle" maxlength="90" required placeholder="Например, решить 5 задач по Python"></label>
-      <label>Описание <span class="optional">необязательно</span><textarea id="taskDescription" rows="2" placeholder="Добавь подробности, если нужно..."></textarea></label>
-      <div class="form-row">
-        <label>Категория<select id="taskCategory"><option value="study">Учёба</option><option value="sport">Спорт</option><option value="work">Работа</option><option value="rest">Отдых</option><option value="personal">Личное</option><option value="ideas">Идеи</option></select></label>
-        <label>Дата<input type="date" id="taskDate" required></label>
-      </div>
-      <div class="form-row">
-        <label>Время <span class="optional">необязательно</span><input type="time" id="taskTime"></label>
-        <label>Приоритет<select id="taskPriority"><option value="normal">Обычный</option><option value="high">Высокий</option><option value="low">Низкий</option></select></label>
-      </div>
-      <div class="form-row">
-        <label>Статус<select id="taskStatus"><option value="todo">Не начато</option><option value="doing">В процессе</option><option value="done">Выполнено</option><option value="cancelled">Отменено</option></select></label>
-      </div>
-      <div id="sportFields" class="sport-fields hidden">
-        <div class="sport-title">⚡ Параметры активности</div>
-        <div class="form-row">
-          <label>Вид активности<select id="sportType"><option>Бег</option><option>Велосипед</option><option>Прогулка</option><option>Тренировка</option><option>Другое</option></select></label>
-          <label>Цель / дистанция<input id="sportGoal" placeholder="Например, 2 км"></label>
-        </div>
-      </div>
-      <div class="modal-actions"><button type="button" class="secondary-button" id="cancelModal">Отмена</button><button type="submit" class="primary-button">Сохранить задачу</button></div>
-    </form>
   </div>
   <script src="script.js"></script>
 </body>
