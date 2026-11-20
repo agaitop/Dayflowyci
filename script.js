@@ -143,6 +143,7 @@ function checkDueTasks() {
     saveTasks();
     renderTasks();
     renderCategoryCounts();
+    renderAwards();
   }
 }
 
@@ -336,6 +337,7 @@ function renderTasks() {
   const fullDate = $("fullDate");
   if (fullDate) fullDate.textContent = formatDate(selectedDate).toUpperCase();
   renderWeekStrip();
+  renderAwards();
 }
 
 function renderCategoryCounts() {
@@ -399,6 +401,7 @@ function init() {
   updateNoteForDate();
   startNotificationChecks();
   initNutrition();
+  renderAwards();
 
   const dateInput = $("selectedDate");
   if (dateInput) {
@@ -473,6 +476,7 @@ function init() {
     renderTasks();
     renderCategoryCounts();
     updateNoteForDate();
+    renderAwards();
   });
 
   $("taskList")?.addEventListener("change", event => {
@@ -490,6 +494,7 @@ function init() {
     showToast(`Статус изменён: ${STATUSES[task.status]}`);
     renderTasks();
     renderCategoryCounts();
+    renderAwards();
   });
 
   $("taskList")?.addEventListener("click", event => {
@@ -512,6 +517,7 @@ function init() {
         }
         renderTasks();
         renderCategoryCounts();
+        renderAwards();
         showToast("Задача удалена");
       }
     }
@@ -597,7 +603,6 @@ function init() {
     });
   }
 
-  // Ошибки JS видны в консоли и не остаются незамеченными пользователем.
   window.addEventListener("error", event => {
     console.error("DayFlow: ошибка JavaScript.", event.error || event.message);
     showToast("Возникла ошибка интерфейса. Обновите страницу.", "error");
@@ -612,11 +617,8 @@ document.addEventListener("DOMContentLoaded", init);
 
 /* === NUTRITION PAGE (DayFlow) — ручной ввод + база продуктов, без AI === */
 const NUTRITION_KEY = "dayflow_nutrition_v1";
-
-/* Стандартные дневные цели — анкеты и ввод личных данных не нужны. */
 const NUTRITION_GOALS = { kcal: 2200, protein: 140, fat: 70, carbs: 250 };
 
-/* База продуктов: значения на 100 г (ккал, белки, жиры, углеводы). Ориентировочные. */
 const FOOD_DB = [
   { name: "Куриная грудка (варёная)", kcal: 165, protein: 31, fat: 3.6, carbs: 0 },
   { name: "Куриная грудка (жареная)", kcal: 197, protein: 29, fat: 8, carbs: 0.5 },
@@ -665,8 +667,8 @@ const FOOD_DB = [
 
 let nutritionDate = todayISO();
 let nutritionEntries = [];
-let mealPhotoData = null; // фото приёма пищи (dataURL), хранится как память
-let selectedFoodIndex = null; // индекс продукта из базы или null
+let mealPhotoData = null;
+let selectedFoodIndex = null;
 
 function loadNutrition() {
   try {
@@ -711,7 +713,6 @@ function round1(value) {
   return Math.round(value * 10) / 10;
 }
 
-/* Кольцо прогресса: value — съедено, goal — дневная цель. */
 function ringHTML(value, goal, variant, centerTop, centerBottom) {
   const radius = 45;
   const circumference = 2 * Math.PI * radius;
@@ -794,7 +795,6 @@ function renderNutrition() {
   list.classList.toggle("hidden", nutritionEntries.length === 0);
 }
 
-/* === Честный поиск еды: только реальные данные, без выдуманных цифр === */
 function normalizeFoodText(value) {
   return String(value || "").toLocaleLowerCase("ru").replace(/ё/g, "е").trim().replace(/\s+/g, " ");
 }
@@ -931,7 +931,7 @@ function compressPhoto(file) {
 
 function initNutrition() {
   const form = $("mealForm");
-  if (!form) return; // страница питания не открыта — выходим
+  if (!form) return;
 
   const nameInput = $("foodNameInput");
   nameInput?.addEventListener("input", () => {
@@ -1042,7 +1042,6 @@ function initNutrition() {
       if (exact) {
         entryBase = exact;
       } else {
-        // Честный отказ: продукт неизвестен — цифры не выдумываем.
         showUnknownFoodNotice(name);
         openCustomFields();
         showToast("Этого блюда нет в базе — введите КБЖУ на 100 г, чтобы расчёт был честным.", "error");
@@ -1096,4 +1095,102 @@ function initNutrition() {
   });
 
   setNutritionDate(nutritionDate);
+}
+
+/* === AWARDS (DayFlow) — честные награды за выполненные дни === */
+const AWARDS_KEY = "dayflow_awards_v1";
+const AWARD_MIN_TASKS = 3;   // минимум задач в дне для засчёта
+const DIPLOMA_DAYS = 10;
+const CUP_DAYS = 30;
+
+function loadAwards() {
+  try {
+    const raw = readStorage(AWARDS_KEY, "{}");
+    const data = JSON.parse(raw);
+    return data && typeof data === "object" ? data : {};
+  } catch (error) { return {}; }
+}
+
+function saveAwards(data) {
+  return writeStorage(AWARDS_KEY, JSON.stringify(data));
+}
+
+/* День засчитывается ЧЕСТНО: >=3 задач done, все задачи дня закрыты (done/cancelled). */
+function isDayHonestlyClosed(dateISO) {
+  const dayTasks = tasks.filter(task => task.date === dateISO);
+  if (dayTasks.length < AWARD_MIN_TASKS) return false;
+  const allResolved = dayTasks.every(task => task.status === "done" || task.status === "cancelled");
+  if (!allResolved) return false;
+  const doneCount = dayTasks.filter(task => task.status === "done").length;
+  return doneCount >= AWARD_MIN_TASKS;
+}
+
+function pluralDays(number) {
+  const last = number % 10;
+  const lastTwo = number % 100;
+  if (last === 1 && lastTwo !== 11) return "день";
+  if (last >= 2 && last <= 4 && (lastTwo < 12 || lastTwo > 14)) return "дня";
+  return "дней";
+}
+
+/* Пересчёт: фиксируем только ПРОШЕДШИЕ дни (date < сегодня) — анти-чит. */
+function recomputeAwards() {
+  const awards = loadAwards();
+  const credited = new Set(Array.isArray(awards.creditedDays) ? awards.creditedDays : []);
+  let changed = false;
+  const today = todayISO();
+  const datesWithTasks = new Set(tasks.map(task => task.date));
+
+  datesWithTasks.forEach(date => {
+    if (date >= today) return;        // сегодня и будущее — не фиксируем раньше времени
+    if (credited.has(date)) return;   // уже засчитан
+    if (isDayHonestlyClosed(date)) { credited.add(date); changed = true; }
+  });
+
+  const sortedDays = [...credited].sort();
+  const totalDays = sortedDays.length;
+  const prevTotal = awards.totalDays || 0;
+  const newAwards = {
+    creditedDays: sortedDays,
+    totalDays,
+    diplomaAt: awards.diplomaAt || null,
+    cupAt: awards.cupAt || null
+  };
+  if (!newAwards.diplomaAt && totalDays >= DIPLOMA_DAYS) newAwards.diplomaAt = today;
+  if (!newAwards.cupAt && totalDays >= CUP_DAYS) newAwards.cupAt = today;
+
+  if (changed || newAwards.diplomaAt !== awards.diplomaAt || newAwards.cupAt !== awards.cupAt) {
+    if (prevTotal < DIPLOMA_DAYS && totalDays >= DIPLOMA_DAYS) showToast("📜 Поздравляем! Диплом за 10 честных дней!");
+    if (prevTotal < CUP_DAYS && totalDays >= CUP_DAYS) showToast("🏆 Невероятно! Кубок за 30 честных дней — ваш!");
+    saveAwards(newAwards);
+  }
+  return newAwards;
+}
+
+function renderAwards() {
+  const wrap = $("awardsBlock");
+  if (!wrap) return;
+  const awards = recomputeAwards();
+  const total = awards.totalDays || 0;
+  const hasDiploma = total >= DIPLOMA_DAYS;
+  const hasCup = total >= CUP_DAYS;
+  const toDiploma = Math.max(DIPLOMA_DAYS - total, 0);
+  const toCup = Math.max(CUP_DAYS - total, 0);
+
+  wrap.innerHTML = `
+    <div class="award-row">
+      <span class="award-badge ${hasDiploma ? "earned" : ""}" title="Диплом за ${DIPLOMA_DAYS} честных дней">📜</span>
+      <div class="award-info">
+        <strong>Диплом</strong>
+        <small>${hasDiploma ? "Получен" : `ещё ${toDiploma} ${pluralDays(toDiploma)}`}</small>
+      </div>
+    </div>
+    <div class="award-row">
+      <span class="award-badge ${hasCup ? "earned" : ""}" title="Кубок за ${CUP_DAYS} честных дней">🏆</span>
+      <div class="award-info">
+        <strong>Кубок</strong>
+        <small>${hasCup ? "Получен" : `ещё ${toCup} ${pluralDays(toCup)}`}</small>
+      </div>
+    </div>
+    <div class="award-progress">Честных дней: ${total}</div>`;
 }
